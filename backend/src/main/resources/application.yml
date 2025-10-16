@@ -15,25 +15,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
-    open-in-view: true
-
-  sql:
-    init:
-      mode: always
 
   flyway:
     enabled: true
     locations: classpath:db/migration
 
-  devtools:
-    restart:
-      enabled: true
-
-# Swagger / OpenAPI の設定
 springdoc:
   api-docs:
     enabled: true
-    path: /v3/api-docs        # デフォルトでOK。/api-docsに変えない
+    path: /v3/api-docs
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
@@ -41,5 +31,14 @@ springdoc:
     url: /v3/api-docs
     operationsSorter: method
     display-request-duration: true
-    try-it-out-enabled: true
+    try-it-out-enabled: true       # ✅ ここ重要！
     doc-expansion: none
+    supported-submit-methods: ["get", "post", "put", "delete", "patch"]  # ✅ これも重要！
+
+
+
+# JWT
+jwt:
+  # これは 64バイト相当の Base64。開発用にどうぞ（本番は必ず自分で生成してください）
+  secret: "QkR0dGJrZ0p5c0o3cU1kV1Z2c1ZqV2ZrQ0pYTlR2M0l5cU1MN29kT1hYZ3ZHS2JXbGZFM1lxc1BOWk1SVGc9PQ=="
+  expiration-ms: 2592000000

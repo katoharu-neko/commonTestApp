@@ -1,16 +1,20 @@
 package com.example.commonTestApp.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
 
 @Configuration
-@OpenAPIDefinition(
-    info = @Info(
-        title = "共通テスト過去問演習補助アプリ API",
-        version = "1.0.0",
-        description = "Spring Boot + React 用 REST API ドキュメント"
-    )
-)
-public class OpenApiConfig { }
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Common Test App API")
+                        .description("JWT認証付き API ドキュメント")
+                        .version("1.0.0"));
+    }
+}
