@@ -1,5 +1,6 @@
 package com.example.commonTestApp.security;
 
+import java.util.Base64;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -9,22 +10,21 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 @Component
 public class JwtUtil {
 
-    // application.yml で設定: jwt.secret は Base64 で
-    @Value("${jwt.secret:ZmFrZV9zZWNyZXRfMzJieXRlc19iYXNlNjQ=}")
-    private String secretBase64;
+    @Value("${jwt.secret}")
+    private String base64Secret;
 
-    @Value("${jwt.expiration-ms:2592000000}") // 30日
+    @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
     private SecretKey key() {
-        byte[] decoded = Decoders.BASE64.decode(secretBase64);
-        return Keys.hmacShaKeyFor(decoded);
+        byte[] keyBytes = Base64.getDecoder().decode(base64Secret);
+        // ここで 32byte(=256bit) 以上ないと WeakKeyException
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String subjectEmail) {
@@ -36,5 +36,14 @@ public class JwtUtil {
                 .setExpiration(exp)
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String getSubject(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(key())
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
     }
 }

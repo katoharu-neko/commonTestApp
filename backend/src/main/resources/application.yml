@@ -23,19 +23,20 @@ spring:
 springdoc:
   api-docs:
     enabled: true
-    path: /v3/api-docs         # ← /v3 に統一
+    path: /v3/api-docs
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
-    config-url: /v3/api-docs/swagger-config
-    url: /v3/api-docs
-    operationsSorter: method
-    display-request-duration: true
     try-it-out-enabled: true
-    doc-expansion: none
-    supportedSubmitMethods: [get, post, put, delete, patch, options, head]
 
 # JWT
 jwt:
-  secret: "QkR0dGJrZ0p5c0o3cU1kV1Z2c1ZqV2ZrQ0pYTlR2M0l5cU1MN29kT1hYZ3ZHS2JXbGZFM1lxc1BOWk1SVGc9PQ==" # 32+ bytes Base64
+  # 次の手順で作る値に置き換える
+  secret: l7tuQy1VlzzwHO2nl3ojRhaqT8N9CQ4WZnPYT90cQJMSA+r9YxDwrC2MI1Gr+OwBVWSpyhBvKs2YVLMXrGhM2A==
   expiration-ms: 2592000000
+
+# （任意）ログ細かく見たいとき
+# logging:
+#   level:
+#     org.springframework.security: DEBUG
+#     org.springdoc: DEBUG

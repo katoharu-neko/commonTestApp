@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,47 +19,43 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 public class SecurityConfig {
 
+    // Swagger と Auth は誰でも到達可、それ以外は認証必須（段階①）
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
-            .cors(c -> c.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/v3/api-docs/swagger-config",
-                    "/swagger-resources/**",
-                    "/webjars/**",
+                    "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
                     "/api/auth/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .httpBasic(b -> b.disable())
-            .formLogin(f -> f.disable());
+            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration conf = new CorsConfiguration();
-        conf.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
-        conf.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        conf.setAllowedHeaders(List.of("*"));
-        conf.setAllowCredentials(true);
-        conf.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource s = new UrlBasedCorsConfigurationSource();
-        s.registerCorsConfiguration("/**", conf);
-        return s;
+        CorsConfiguration c = new CorsConfiguration();
+        c.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
+        c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        c.setAllowedHeaders(List.of("*"));
+        c.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", c);
+        return source;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
-        return cfg.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration conf) throws Exception {
+        return conf.getAuthenticationManager();
     }
 }
