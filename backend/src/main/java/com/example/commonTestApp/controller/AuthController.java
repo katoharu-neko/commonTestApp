@@ -2,8 +2,6 @@ package com.example.commonTestApp.controller;
 
 import java.util.Map;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +11,6 @@ import com.example.commonTestApp.service.AuthService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000")  // Reactからのアクセスを許可
 public class AuthController {
 
     private final AuthService authService;
@@ -22,16 +19,19 @@ public class AuthController {
         this.authService = authService;
     }
 
+    // ✅ JSONボディで受け取るように変更
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
-        String email = loginData.get("email");
-        String password = loginData.get("password");
+    public String login(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String password = body.get("password");
+        return authService.login(email, password);
+    }
 
-        try {
-            String token = authService.login(email, password);
-            return ResponseEntity.ok(Map.of("token", token));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+    @PostMapping("/register")
+    public String register(@RequestBody Map<String, String> body) {
+        String name = body.get("name");
+        String email = body.get("email");
+        String password = body.get("password");
+        return authService.register(name, email, password);
     }
 }
