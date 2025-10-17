@@ -1,26 +1,16 @@
-// src/App.jsx
-import React from "react";
-import { Outlet, Link, useNavigate } from "react-router-dom";
+// frontend/src/App.jsx
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './routes';
+import NavBar from './components/NavBar';
 
 export default function App() {
-  const navigate = useNavigate();
-  const logout = () => {
-    localStorage.removeItem("jwt");
-    navigate("/login");
-  };
-
   return (
-    <div>
-      {/* 最低限のメニューバー */}
-      <nav style={{ display: "flex", gap: 12, padding: 12, borderBottom: "1px solid #ddd" }}>
-        <Link to="/dashboard">ダッシュボード</Link>
-        <Link to="/scores/input">得点入力</Link>
-        <button onClick={logout}>ログアウト</button>
-      </nav>
-
-      <div style={{ padding: 16 }}>
-        <Outlet />
+    <Router>
+      <NavBar />
+      <div style={{ padding: '16px' }}>
+        <AppRoutes />
       </div>
-    </div>
+    </Router>
   );
 }

@@ -1,51 +1,71 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "../api/auth";
+// frontend/src/pages/LoginPage.jsx
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/apiClient';
 
-function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+export default function LoginPage() {
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setErrMsg('');
+    setLoading(true);
     try {
-      const data = await login(email, password);
-      localStorage.setItem("token", data.token);
-      navigate("/home");
+      // バックエンド: POST /api/auth/login {email, password} -> {token}
+      const res = await api.post('/api/auth/login', { email, password });
+      const token = res?.data?.token;
+      if (!token) {
+        throw new Error('トークンが取得できませんでした。');
+      }
+      localStorage.setItem('token', token);
+
+      // ★ ここを "from" ではなく固定で /dashboard に
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError("ログインに失敗しました。メールまたはパスワードを確認してください。");
+      console.error(err);
+      setErrMsg('ログインに失敗しました。メール/パスワードをご確認ください。');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ width: "300px", margin: "100px auto" }}>
+    <div style={{ maxWidth: 380, margin: '48px auto' }}>
       <h2>ログイン</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
+      <form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}>
+        <label>
+          メールアドレス
           <input
             type="email"
-            placeholder="メールアドレス"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            placeholder="you@example.com"
+            style={{ width: '100%' }}
           />
-        </div>
-        <div>
+        </label>
+        <label>
+          パスワード
           <input
             type="password"
-            placeholder="パスワード"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            placeholder="******"
+            style={{ width: '100%' }}
           />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">ログイン</button>
+        </label>
+        <button type="submit" disabled={loading}>
+          {loading ? 'ログイン中...' : 'ログイン'}
+        </button>
+        {errMsg && <div style={{ color: 'red' }}>{errMsg}</div>}
       </form>
     </div>
   );
 }
-
-export default LoginPage;

@@ -1,44 +1,40 @@
-// src/routes.jsx
-import React from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import App from "./App";
-import Dashboard from "./pages/Dashboard";
-import ScoreInputPage from "./pages/ScoreInputPage";
-import LoginRegisterForm from "./components/LoginRegisterForm";
+// frontend/src/routes.jsx
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import Dashboard from './pages/Dashboard';
+import ScoreInputPage from './pages/ScoreInputPage';
+import RequireAuth from './components/RequireAuth';
 
-const isAuthed = () => !!localStorage.getItem("jwt");
+export default function AppRoutes() {
+  return (
+    <Routes>
+      {/* ログイン（公開） */}
+      <Route path="/" element={<LoginPage />} />
 
-const Protected = ({ children }) => {
-  return isAuthed() ? children : <Navigate to="/login" replace />;
-};
+      {/* 古い /home ルートが残っていても常に /dashboard に寄せる */}
+      <Route path="/home" element={<Navigate to="/dashboard" replace />} />
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <App />,
-    children: [
-      { path: "/", element: <Navigate to="/dashboard" replace /> },
-      { path: "/home", element: <Navigate to="/dashboard" replace /> }, // ★追加
-      { path: "/login", element: <LoginRegisterForm /> },
-      {
-        path: "/dashboard",
-        element: (
-          <Protected>
+      {/* 認証必須 */}
+      <Route
+        path="/dashboard"
+        element={
+          <RequireAuth>
             <Dashboard />
-          </Protected>
-        ),
-      },
-      {
-        path: "/scores/input",
-        element: (
-          <Protected>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/scores/input"
+        element={
+          <RequireAuth>
             <ScoreInputPage />
-          </Protected>
-        ),
-      },
-      { path: "*", element: <Navigate to="/dashboard" replace /> }, // 任意：その他もダッシュボードへ
-    ],
-  },
-]);
+          </RequireAuth>
+        }
+      />
 
-export default router;
+      {/* それ以外はトップへ */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

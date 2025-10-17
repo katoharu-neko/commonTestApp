@@ -1,33 +1,36 @@
-// src/pages/ScoreInputPage.jsx
-import React, { useState } from "react";
-import NavBar from "../components/NavBar";
-import ScoreInputForm from "../components/ScoreInputForm"; // 既存を流用
-import RadarChartECharts from "../components/RadarChartECharts";
+// frontend/src/pages/ScoreInputPage.jsx
+import React from 'react';
+
+
+//import ScoreInputForm from '../components/ScoreInputForm';
+//import RadarChartECharts from '../components/Graph/RadarChartECharts';
 
 export default function ScoreInputPage() {
-  // 例：[{ subject: "数学", value: 80, max: 100 }, ...]
-  const [scores, setScores] = useState([]);
-
   return (
-    <>
-      <NavBar />
-      <div style={{ padding: 16, display: "grid", gap: 24 }}>
-        <h2>得点入力</h2>
+    <div>
+      <h2>得点入力</h2>
 
-        {/* 既存フォームから現在の入力内容を受け取る */}
-        <ScoreInputForm
-          onScoresChange={(arr) => setScores(arr)}
-          onSubmitted={(saved) => {
-            // 登録成功後の処理（トースト表示や履歴更新など）
-            console.log("saved!", saved);
-          }}
-        />
-
-        <div>
-          <h3>レーダーチャート（ECharts）</h3>
-          <RadarChartECharts scores={scores} />
+      {/* 既存の入力フォームがある場合 */}
+      {false ? (
+        <div style={{ marginBottom: 24 }}>
+          {/* <ScoreInputForm /> */}
         </div>
-      </div>
-    </>
+      ) : (
+        <div style={{ marginBottom: 24, padding: 12, border: '1px dashed #ccc' }}>
+          （ここに得点入力フォームを配置します：`components/ScoreInputForm.jsx`）
+        </div>
+      )}
+
+      {/* 既存の ECharts レーダーがある場合 */}
+      {false ? (
+        <div>
+          {/* <RadarChartECharts scores={...} subjects={...} /> */}
+        </div>
+      ) : (
+        <div style={{ padding: 12, border: '1px dashed #ccc' }}>
+          （ここに ECharts レーダーチャートを配置します：`components/Graph/RadarChartECharts.jsx`）
+        </div>
+      )}
+    </div>
   );
 }

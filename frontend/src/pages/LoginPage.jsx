@@ -1,47 +1,70 @@
-// src/pages/LoginPage.jsx
-import React, { useState } from "react";
-import apiClient from "../api/apiClient";
-import { useNavigate } from "react-router-dom";
+// frontend/src/pages/LoginPage.jsx
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import api from '../api/apiClient';
 
 export default function LoginPage() {
-  const nav = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [err, setErr] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard';
 
-  const submit = async (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setErr("");
+    setErrMsg('');
+    setLoading(true);
     try {
-      const { data } = await apiClient.post("/api/auth/login", { email, password });
-      localStorage.setItem("token", data.token);
-      nav("/");
-    } catch (error) {
-      console.error(error);
-      setErr("ログインに失敗しました");
+      // バックエンド: POST /api/auth/login {email, password} -> {token}
+      const res = await api.post('/api/auth/login', { email, password });
+      const token = res?.data?.token;
+      if (!token) {
+        throw new Error('トークンが取得できませんでした。');
+      }
+      localStorage.setItem('token', token); // ← ここも "token" に統一
+      navigate(from, { replace: true });
+    } catch (err) {
+      console.error(err);
+      setErrMsg('ログインに失敗しました。メール/パスワードをご確認ください。');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: "64px auto" }}>
+    <div style={{ maxWidth: 380, margin: '48px auto' }}>
       <h2>ログイン</h2>
-      <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-        <input
-          type="email"
-          placeholder="メールアドレス"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="パスワード"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        {err && <div style={{ color: "crimson" }}>{err}</div>}
-        <button type="submit">ログイン</button>
+      <form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}>
+        <label>
+          メールアドレス
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="you@example.com"
+            style={{ width: '100%' }}
+          />
+        </label>
+        <label>
+          パスワード
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="******"
+            style={{ width: '100%' }}
+          />
+        </label>
+        <button type="submit" disabled={loading}>
+          {loading ? 'ログイン中...' : 'ログイン'}
+        </button>
+        {errMsg && <div style={{ color: 'red' }}>{errMsg}</div>}
       </form>
     </div>
   );
