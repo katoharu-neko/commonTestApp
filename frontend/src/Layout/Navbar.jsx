@@ -1,6 +1,7 @@
-// frontend/src/components/Layout/Navbar.jsx
+// src/components/Layout/Navbar.jsx
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { logout } from '../../auth';
 
 const linkStyle = ({ isActive }) => ({
   padding: '8px 12px',
@@ -11,13 +12,17 @@ const linkStyle = ({ isActive }) => ({
 });
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <header style={{
-      position: 'sticky',
-      top: 0,
-      zIndex: 10,
-      background: '#fff',
-      borderBottom: '1px solid #e5e7eb',
+      position: 'sticky', top: 0, zIndex: 10, background: '#fff',
+      borderBottom: '1px solid #e5e7eb'
     }}>
       <div style={{
         maxWidth: 1080, margin: '0 auto', padding: '10px 16px',
@@ -27,10 +32,18 @@ const Navbar = () => {
 
         <nav style={{ display: 'flex', gap: 8 }}>
           <NavLink to="/dashboard" style={linkStyle}>ダッシュボード</NavLink>
-          {/* 追加：年度別レーダーチャート */}
           <NavLink to="/charts/radar" style={linkStyle}>レーダーチャート（年度）</NavLink>
-          {/* 他にもページがあれば追加 */}
         </nav>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            padding: '8px 12px', borderRadius: 6,
+            border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer'
+          }}
+        >
+          ログアウト
+        </button>
       </div>
     </header>
   );

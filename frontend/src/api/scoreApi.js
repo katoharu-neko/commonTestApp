@@ -1,7 +1,8 @@
-// src/api/scoreApi.js
-import apiClient from './apiClient';
+// frontend/src/api/scoreApi.js
+import api from './apiClient';
 
-export async function getMyScores() {
-  const res = await apiClient.get('/api/scores/me'); // ← /me を利用
-  return res.data;
-}
+// 自分のスコア一覧を取得
+export const getMyScores = async () => {
+  const res = await api.get('/api/scores/me');
+  return res.data; // [{id, userId, subject, score, year, createdAt}, ...]
+};

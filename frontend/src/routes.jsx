@@ -1,35 +1,54 @@
-// frontend/src/routes.jsx
+// src/routes.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import ScoreInputPage from './pages/ScoreInputPage';
-import RequireAuth from './components/RequireAuth';
-import AppLayout from './layouts/AppLayout';
+import { isAuthenticated } from './auth';
 
-export default function AppRoutes() {
+import AppLayout from './components/Layout/AppLayout';
+import Dashboard from './pages/Dashboard';
+import ScoresRadarByYear from './pages/ScoresRadarByYear';
+import LoginPage from './pages/LoginPage';
+
+const PrivateRoute = ({ children }) => {
+  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+};
+
+const PublicRoute = ({ children }) => {
+  return isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
+};
+
+const AppRoutes = () => {
   return (
     <Routes>
-      {/* 公開ルート */}
-      <Route path="/" element={<LoginPage />} />
+      <Route path="/" element={
+        isAuthenticated()
+          ? <Navigate to="/dashboard" replace />
+          : <Navigate to="/login" replace />
+      } />
 
-      {/* 古い /home 参照は全て /dashboard に寄せる */}
-      <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+      } />
 
-      {/* 認証が必要なルートは共通レイアウト(AppLayout)で包む */}
-      <Route
-        element={
-          <RequireAuth>
-            <AppLayout />
-          </RequireAuth>
-        }
-      >
+      <Route element={
+        <PrivateRoute>
+          <AppLayout />
+        </PrivateRoute>
+      }>
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/scores/input" element={<ScoreInputPage />} />
+        <Route path="/charts/radar" element={<ScoresRadarByYear />} />
       </Route>
 
-      {/* 不明パスはトップへ */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+
+      <Route path="*" element={
+        isAuthenticated()
+          ? <Navigate to="/dashboard" replace />
+          : <Navigate to="/login" replace />
+      } />
     </Routes>
   );
-}
+};
+
+export default AppRoutes;

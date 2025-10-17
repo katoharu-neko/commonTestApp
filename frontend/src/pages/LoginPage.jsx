@@ -1,71 +1,77 @@
 // frontend/src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import api from '../api/apiClient';
+import { useNavigate } from 'react-router-dom';
+import { login as apiLogin } from '../api/userApi';
+import { loginWithToken } from '../auth';
 
-export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
-
+const LoginPage = () => {
+  const navi = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState('');
 
-  const handleLogin = async (e) => {
+  const doLogin = async (e) => {
     e.preventDefault();
-    setErrMsg('');
+    setErr('');
     setLoading(true);
     try {
-      // バックエンド: POST /api/auth/login {email, password} -> {token}
-      const res = await api.post('/api/auth/login', { email, password });
-      const token = res?.data?.token;
-      if (!token) {
-        throw new Error('トークンが取得できませんでした。');
-      }
-      localStorage.setItem('token', token); // ← ここも "token" に統一
-      navigate(from, { replace: true });
-    } catch (err) {
-      console.error(err);
-      setErrMsg('ログインに失敗しました。メール/パスワードをご確認ください。');
+      const { token } = await apiLogin(email, password);
+      loginWithToken(token);
+      navi('/dashboard', { replace: true });
+    } catch (e) {
+      console.error(e);
+      setErr('ログインに失敗しました。メール・パスワードをご確認ください。');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 380, margin: '48px auto' }}>
-      <h2>ログイン</h2>
-      <form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}>
-        <label>
-          メールアドレス
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-            style={{ width: '100%' }}
-          />
-        </label>
-        <label>
-          パスワード
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="******"
-            style={{ width: '100%' }}
-          />
-        </label>
-        <button type="submit" disabled={loading}>
-          {loading ? 'ログイン中...' : 'ログイン'}
+    <div style={{
+      minHeight: '100vh', display: 'grid', placeItems: 'center',
+      background: '#f9fafb', padding: 16
+    }}>
+      <form onSubmit={doLogin} style={{
+        width: '100%', maxWidth: 420, background: '#fff',
+        padding: 24, border: '1px solid #e5e7eb', borderRadius: 12
+      }}>
+        <h2 style={{ marginTop: 0, marginBottom: 12 }}>ログイン</h2>
+
+        <label style={{ display: 'block', marginBottom: 6 }}>メールアドレス</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e)=>setEmail(e.target.value)}
+          required
+          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #d1d5db', marginBottom: 12 }}
+        />
+
+        <label style={{ display: 'block', marginBottom: 6 }}>パスワード</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e)=>setPassword(e.target.value)}
+          required
+          style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #d1d5db', marginBottom: 16 }}
+        />
+
+        {!!err && <div style={{ color:'red', marginBottom: 12 }}>{err}</div>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%', padding: 12, borderRadius: 8,
+            background: '#3b82f6', color: '#fff', border: 'none', cursor: 'pointer'
+          }}
+        >
+          {loading ? '送信中...' : 'ログイン'}
         </button>
-        {errMsg && <div style={{ color: 'red' }}>{errMsg}</div>}
       </form>
     </div>
   );
-}
+};
+
+export default LoginPage;
