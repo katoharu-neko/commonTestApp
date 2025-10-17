@@ -19,26 +19,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
-            // Swagger UI や API ドキュメントにアクセス可能にする
+            .httpBasic(h -> h.disable())
+            .formLogin(f -> f.disable())
+            .csrf(c -> c.disable())
+            .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/v3/api-docs/**",
-                    "/swagger-ui/**",
                     "/swagger-ui.html",
-                    "/swagger-ui/index.html",
-                    "/api/auth/**"  // ログイン・登録用APIは誰でも可
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/api/auth/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
-
-            // JWTフィルターを追加
-            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
-
-            // CORS, CSRF, BASIC 認証など無効化
-            .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
-            .httpBasic(httpBasic -> httpBasic.disable())
-            .formLogin(form -> form.disable());
+            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -51,11 +45,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://localhost:8080"
-        ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
+        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
