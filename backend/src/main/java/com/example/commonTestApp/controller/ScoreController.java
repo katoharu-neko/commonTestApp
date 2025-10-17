@@ -20,19 +20,25 @@ import com.example.commonTestApp.service.ScoreService;
 
 @RestController
 @RequestMapping("/api/scores")
-@CrossOrigin(origins = "http://localhost:3000") // Reactと連携
+@CrossOrigin(origins = { "http://localhost:3000", "http://localhost:8080" }, allowCredentials = "true")
 public class ScoreController {
 
     private final ScoreService scoreService;
     private final UserRepository userRepository;
     private final ScoreRepository scoreRepository;
 
-    public ScoreController(ScoreService scoreService, UserRepository userRepository, ScoreRepository scoreRepository) {
+    public ScoreController(
+            ScoreService scoreService,
+            UserRepository userRepository,
+            ScoreRepository scoreRepository) {
         this.scoreService = scoreService;
         this.userRepository = userRepository;
         this.scoreRepository = scoreRepository;
     }
 
+    /**
+     * スコア登録（ログイン中ユーザーに紐づけ）
+     */
     @PostMapping
     public ResponseEntity<Score> registerScore(
             @RequestBody Score score,
@@ -46,20 +52,37 @@ public class ScoreController {
         return ResponseEntity.ok(saved);
     }
 
+    /**
+     * 自分の全スコア（ログイン中ユーザー）
+     * /api/scores/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<List<Score>> getMyScores(@AuthenticationPrincipal String email) {
+        User me = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+        List<Score> list = scoreService.findByUserId(me.getId());
+        return ResponseEntity.ok(list);
+    }
 
-    // 特定ユーザーのスコア一覧
+    /**
+     * 特定ユーザーのスコア一覧（管理・確認用）
+     */
     @GetMapping("/user/{userId}")
     public List<Score> getUserScores(@PathVariable Long userId) {
         return scoreService.findByUserId(userId);
     }
 
-    // 年度指定でスコア取得
+    /**
+     * 年度指定でスコア取得（管理・確認用）
+     */
     @GetMapping("/user/{userId}/year/{year}")
     public List<Score> getUserScoresByYear(@PathVariable Long userId, @PathVariable Integer year) {
         return scoreService.findByUserIdAndYear(userId, year);
     }
 
-    // 全スコア取得（確認用）
+    /**
+     * 全スコア取得（確認用）
+     */
     @GetMapping
     public List<Score> getAllScores() {
         return scoreService.findAll();

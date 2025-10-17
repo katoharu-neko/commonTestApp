@@ -1,13 +1,7 @@
-import apiClient from "./apiClient";
+// src/api/scoreApi.js
+import apiClient from './apiClient';
 
-// スコア登録
-export const registerScore = async (score) => {
-  const res = await apiClient.post("/scores", score);
+export async function getMyScores() {
+  const res = await apiClient.get('/api/scores/me'); // ← /me を利用
   return res.data;
-};
-
-// 特定ユーザーのスコア取得
-export const getScoresByUserId = async (userId) => {
-  const res = await apiClient.get(`/scores/user/${userId}`);
-  return res.data;
-};
+}

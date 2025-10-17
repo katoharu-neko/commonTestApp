@@ -19,25 +19,26 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
-            // Basic認証とフォームログインを完全に無効化
-            .httpBasic(httpBasic -> httpBasic.disable())
-            .formLogin(form -> form.disable())
-            .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
-
+            // Swagger UI や API ドキュメントにアクセス可能にする
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/v3/api-docs/swagger-config",
-                        "/swagger-ui.html",
-                        "/api/auth/**"
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/swagger-ui/index.html",
+                    "/api/auth/**"  // ログイン・登録用APIは誰でも可
                 ).permitAll()
                 .anyRequest().authenticated()
             )
 
-            // JWTフィルタをSpring Securityチェーンに追加
-            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+            // JWTフィルターを追加
+            .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
+
+            // CORS, CSRF, BASIC 認証など無効化
+            .cors(Customizer.withDefaults())
+            .csrf(csrf -> csrf.disable())
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(form -> form.disable());
 
         return http.build();
     }
@@ -50,8 +51,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
-        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        config.setAllowedOrigins(List.of(
+            "http://localhost:3000",
+            "http://localhost:8080"
+        ));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
