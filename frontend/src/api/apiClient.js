@@ -1,14 +1,16 @@
-// frontend/src/api/apiClient.js
+// src/api/apiClient.js
 import axios from 'axios';
+import { getToken } from '../auth';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080',
-  withCredentials: false,
+  baseURL: 'http://localhost:8080',
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('jwtToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 

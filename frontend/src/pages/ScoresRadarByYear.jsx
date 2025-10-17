@@ -1,111 +1,70 @@
-// frontend/src/pages/ScoresRadarByYear.jsx
+// src/pages/ScoresRadarByYear.jsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { getMyScores } from '../api/scoreApi';
-import RadarChartECharts from '../components/Graph/RadarChartECharts';
+import ReactECharts from 'echarts-for-react';
+import api from '../api/apiClient';
 
 const ScoresRadarByYear = () => {
-  const [allScores, setAllScores] = useState([]);
+  const [scores, setScores] = useState([]);
   const [year, setYear] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState('');
+  const [years, setYears] = useState([]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await getMyScores();
-        setAllScores(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error(e);
-        setErr('スコア取得に失敗しました。ログイン状態/サーバーを確認してください。');
-      } finally {
-        setLoading(false);
-      }
-    })();
+    const fetch = async () => {
+      const res = await api.get('/api/scores/me'); // ←バックエンドに実装済みの「自分のスコア一覧」
+      const list = res.data || [];
+      setScores(list);
+      const ys = Array.from(new Set(list.map(s => s.year))).sort();
+      setYears(ys);
+      if (ys.length) setYear(ys[ys.length - 1]);
+    };
+    fetch();
   }, []);
 
-  // ある年のスコア（配列）
-  const years = useMemo(() => {
-    const set = new Set();
-    for (const s of allScores) if (s.year) set.add(s.year);
-    return Array.from(set).sort(); // 昇順
-  }, [allScores]);
+  const { indicator, data } = useMemo(() => {
+    if (!scores.length || !year) return { indicator: [], data: [] };
 
-  useEffect(() => {
-    if (!year && years.length) {
-      setYear(String(years[years.length - 1])); // デフォは最新年
-    }
-  }, [years, year]);
+    // 同一年のレコードだけ抽出
+    const filtered = scores.filter(s => String(s.year) === String(year));
 
-  const thisYearScores = useMemo(() => {
-    if (!year) return [];
-    return allScores.filter((s) => String(s.year) === String(year));
-  }, [allScores, year]);
+    // 科目ごとに最大満点（fullScore）が分かるなら Subject テーブルを使うのが理想ですが、
+    // ここでは 100 点満点として描画します。必要なら API で満点を取得して差し替えてください。
+    const subjects = Array.from(new Set(filtered.map(s => s.subject)));
+    const indicator = subjects.map(sub => ({ name: sub, max: 100 }));
+
+    // 科目ごとに「最後のスコア」を採用（平均にしたいなら reduce で平均化してください）
+    const lastBySubject = subjects.map(sub => {
+      const items = filtered.filter(f => f.subject === sub);
+      return items[items.length - 1]?.score ?? 0;
+    });
+
+    return { indicator, data: lastBySubject };
+  }, [scores, year]);
+
+  const option = {
+    title: { text: `年度別レーダーチャート (${year || '-'})` },
+    tooltip: {},
+    radar: { indicator },
+    series: [{
+      type: 'radar',
+      data: [{ value: data, name: '得点' }],
+      areaStyle: {}
+    }]
+  };
 
   return (
-    <div style={{ padding: 24 }}>
-      <h2>年度別レーダーチャート</h2>
+    <div>
+      <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <h2 style={{ margin: 0 }}>レーダーチャート（年度）</h2>
+        <select value={year} onChange={e => setYear(e.target.value)} style={{ padding: 6 }}>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
 
-      {loading && <p>読み込み中...</p>}
-      {!!err && <p style={{ color: 'red' }}>{err}</p>}
-
-      {years.length > 0 && (
-        <div style={{ margin: '12px 0 20px' }}>
-          <label htmlFor="yearSel" style={{ marginRight: 8 }}>年度選択：</label>
-          <select
-            id="yearSel"
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            style={{ padding: '6px 10px' }}
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
+      {indicator.length ? (
+        <ReactECharts option={option} style={{ height: 480 }} notMerge />
+      ) : (
+        <p>表示できるデータがありません。</p>
       )}
-
-      {!loading && years.length === 0 && (
-        <div style={{ marginTop: 16, padding: 16, border: '1px solid #ddd', borderRadius: 8 }}>
-          まだスコアがありません。スコアを登録してください。
-        </div>
-      )}
-
-      {thisYearScores.length > 0 && (
-        <div style={{ marginTop: 8 }}>
-          <RadarChartECharts
-            scores={thisYearScores}
-            title={`${year} 年度`}
-          />
-        </div>
-      )}
-
-      {thisYearScores.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <h3>データ一覧（{year}）</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>科目</th>
-                <th style={{ borderBottom: '1px solid #ccc', textAlign: 'right', padding: 8 }}>点数</th>
-                <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: 8 }}>登録日時</th>
-              </tr>
-            </thead>
-            <tbody>
-              {thisYearScores.map((s) => (
-                <tr key={s.id || `${s.subject}-${s.createdAt}`}>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>{s.subject}</td>
-                  <td style={{ borderBottom: '1px solid #eee', textAlign: 'right', padding: 8 }}>{s.score}</td>
-                  <td style={{ borderBottom: '1px solid #eee', padding: 8 }}>
-                    {s.createdAt ? new Date(s.createdAt).toLocaleString() : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
     </div>
   );
 };

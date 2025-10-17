@@ -1,11 +1,13 @@
-// frontend/src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx
 import React from 'react';
 
-export default function Dashboard() {
+const Dashboard = () => {
   return (
     <div>
-      <h2>ダッシュボード</h2>
-      <p>ようこそ！上部メニューから機能に移動してください。</p>
+      <h2 style={{ marginBottom: 12 }}>ダッシュボード</h2>
+      <p>メニューバーから「レーダーチャート（年度）」へ移動できます。</p>
     </div>
   );
-}
+};
+
+export default Dashboard;

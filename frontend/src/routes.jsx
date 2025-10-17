@@ -16,39 +16,39 @@ const PublicRoute = ({ children }) => {
   return isAuthenticated() ? <Navigate to="/dashboard" replace /> : children;
 };
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/" element={
-        isAuthenticated()
-          ? <Navigate to="/dashboard" replace />
-          : <Navigate to="/login" replace />
-      } />
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={
+      isAuthenticated()
+        ? <Navigate to="/dashboard" replace />
+        : <Navigate to="/login" replace />
+    } />
 
-      <Route path="/login" element={
-        <PublicRoute>
-          <LoginPage />
-        </PublicRoute>
-      } />
+    <Route path="/login" element={
+      <PublicRoute>
+        <LoginPage />
+      </PublicRoute>
+    } />
 
-      <Route element={
-        <PrivateRoute>
-          <AppLayout />
-        </PrivateRoute>
-      }>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/charts/radar" element={<ScoresRadarByYear />} />
-      </Route>
+    <Route element={
+      <PrivateRoute>
+        <AppLayout />
+      </PrivateRoute>
+    }>
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/charts/radar" element={<ScoresRadarByYear />} />
+    </Route>
 
-      <Route path="/home" element={<Navigate to="/dashboard" replace />} />
+    {/* 旧 /home はダッシュボードへ */}
+    <Route path="/home" element={<Navigate to="/dashboard" replace />} />
 
-      <Route path="*" element={
-        isAuthenticated()
-          ? <Navigate to="/dashboard" replace />
-          : <Navigate to="/login" replace />
-      } />
-    </Routes>
-  );
-};
+    {/* フォールバック */}
+    <Route path="*" element={
+      isAuthenticated()
+        ? <Navigate to="/dashboard" replace />
+        : <Navigate to="/login" replace />
+    } />
+  </Routes>
+);
 
 export default AppRoutes;

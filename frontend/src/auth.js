@@ -1,15 +1,18 @@
-// frontend/src/auth.js
-export const getToken = () => localStorage.getItem('jwtToken');
+// src/auth.js
+const TOKEN_KEY = 'jwtToken';
 
-export const isAuthenticated = () => {
-  const t = getToken();
-  return !!t && t.trim().length > 0;
+export const setToken = (token) => {
+  localStorage.setItem(TOKEN_KEY, token);
 };
 
-export const loginWithToken = (token) => {
-  localStorage.setItem('jwtToken', token);
+export const getToken = () => {
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+export const isAuthenticated = () => {
+  return !!getToken();
 };
 
 export const logout = () => {
-  localStorage.removeItem('jwtToken');
+  localStorage.removeItem(TOKEN_KEY);
 };
