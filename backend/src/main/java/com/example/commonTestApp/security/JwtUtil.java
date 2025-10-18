@@ -1,3 +1,4 @@
+// backend/src/main/java/com/example/commonTestApp/security/JwtUtil.java
 package com.example.commonTestApp.security;
 
 import java.util.Base64;
@@ -7,6 +8,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -19,9 +21,16 @@ public class JwtUtil {
     private final long expirationMs;
 
     public JwtUtil(
-            @Value("${jwt.secret}") String base64Secret,
-            @Value("${jwt.expiration-ms}") long expirationMs) {
-        // application.yml の base64 をバイト列に
+            @Value("${jwt.secret:}") String base64Secret,
+            @Value("${jwt.expiration-ms:0}") long expirationMs) {
+
+        if (!StringUtils.hasText(base64Secret)) {
+            throw new IllegalStateException("jwt.secret が未設定です。application.yml に設定してください。");
+        }
+        if (expirationMs <= 0) {
+            throw new IllegalStateException("jwt.expiration-ms が未設定/不正です。正の数で設定してください。");
+        }
+
         byte[] bytes = Base64.getDecoder().decode(base64Secret);
         this.key = Keys.hmacShaKeyFor(bytes);
         this.expirationMs = expirationMs;
@@ -30,21 +39,21 @@ public class JwtUtil {
     public String generateToken(String email) {
         long now = System.currentTimeMillis();
         return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date(now))
-                .expiration(new Date(now + expirationMs))
+                .setSubject(email)
+                .setIssuedAt(new Date(now))
+                .setExpiration(new Date(now + expirationMs))
                 .signWith(key)
                 .compact();
     }
 
     public String getSubject(String token) {
         try {
-            Claims c = Jwts.parser()
-                    .verifyWith(key)
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
                     .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-            return c.getSubject();
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getSubject();
         } catch (Exception e) {
             return null;
         }

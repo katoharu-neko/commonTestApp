@@ -1,3 +1,4 @@
+# backend/src/main/resources/application.yml
 server:
   port: 8080
 
@@ -33,12 +34,18 @@ springdoc:
     operations-sorter: method
     doc-expansion: none
 
-# ←←← SendGrid キーが「空」だと MailService は “送信せずログ出力” に切り替えます
+# ← ここが今回のクラッシュ原因（必須）
+jwt:
+  # 32バイト以上の秘密鍵(Base64)。下は開発用サンプルです
+  secret: "QkR0dGJrZ0p5c0o3cU1kV1Z2c1ZqV2ZrQ0pYTlR2M0l5cU1MN29kT1hYZ3ZHS2JXbGZFM1lxc1BOWk1SVGc9PQ=="
+  expiration-ms: 2592000000  # 30日
+
+# 開発時メール送信（SendGrid未設定ならログ出力のみ）
 sendgrid:
-  apiKey: ""
+  apiKey: ""  # 空なら送らずログ出力
 
 app:
   mail:
-    from: "no-reply@common-test-app.local"
-  # 検証URLのベース（バックエンドの公開URL）。Heroku 乗せ替え時に差し替え予定
-  backendBaseUrl: "http://localhost:8080"
+    from: "no-reply@example.com"
+  frontendBaseUrl: "http://localhost:3000"
+  backendBaseUrl: "http://localhost:8080" 

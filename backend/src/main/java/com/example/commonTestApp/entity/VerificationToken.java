@@ -1,6 +1,7 @@
+// backend/src/main/java/com/example/commonTestApp/entity/VerificationToken.java
 package com.example.commonTestApp.entity;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,32 +9,27 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
+import lombok.Data;
 
 @Entity
 @Table(name = "verification_tokens")
-@Getter
-@Setter
+@Data
 public class VerificationToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** ランダムな一意トークン */
-    @Column(nullable = false, unique = true, length = 190)
+    @Column(nullable = false, unique = true, length = 191)
     private String token;
 
-    /** 紐づくユーザー */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private User user;
 
-    /** 有効期限（V6 の DATETIME カラムに対応） */
-    @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date expiresAt;  // ← Date 型
 }
