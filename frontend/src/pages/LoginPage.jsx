@@ -1,65 +1,78 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { authApi } from '../api/authApi';
-import { setToken } from '../auth';
+import { Link } from 'react-router-dom';
+import authApi from '../api/authApi';
 
-const LoginPage = () => {
-  const nav = useNavigate();
-  const location = useLocation();
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
-  const [busy, setBusy] = useState(false);
+export default function LoginPage() {
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const onChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-  const handleSubmit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    if (!email.trim() || !pw) {
-      setErr('メールとパスワードを入力してください');
-      return;
-    }
+    setLoading(true);
     try {
-      setBusy(true);
-      const { token } = await authApi.login({ email: email.trim(), password: pw });
-      setToken(token);
-      nav(from, { replace: true });
-    } catch (e) {
-      if (e?.response?.status === 403) setErr('メール認証が未完了です。メールをご確認ください。');
-      else setErr('ログインに失敗しました。メール/パスワードをご確認ください。');
+      const { token } = await authApi.login(form);
+      if (!token) {
+        throw new Error('トークンが取得できませんでした');
+      }
+      localStorage.setItem('jwt', token);
+      // ルーター状態とガードの競合を避けるためハードリダイレクト
+      window.location.replace('/dashboard');
+    } catch (error) {
+      console.error(error);
+      setErr('メールアドレスまたはパスワードが正しくありません。');
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto', padding: 24, border: '1px solid #e5e7eb', borderRadius: 12 }}>
-      <h2 style={{ marginTop: 0 }}>ログイン</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          メールアドレス
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-        </label>
+    <div style={{ maxWidth: 420, margin: '40px auto' }}>
+      <h2>ログイン</h2>
+      <form onSubmit={onSubmit} autoComplete="on">
+        <div style={{ marginBottom: 12 }}>
+          <label>メールアドレス</label>
+          <input
+            type="email"
+            name="email"
+            value={form.email}
+            onChange={onChange}
+            className="input"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
+        </div>
+        <div style={{ marginBottom: 12 }}>
+          <label>パスワード</label>
+          <input
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={onChange}
+            className="input"
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+          />
+        </div>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          パスワード
-          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
-        </label>
+        {err && <div style={{ color: 'crimson', marginBottom: 12 }}>{err}</div>}
 
-        <button disabled={busy} type="submit" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
-          {busy ? '送信中…' : 'ログイン'}
+        <button type="submit" disabled={loading}>
+          {loading ? '送信中…' : 'ログイン'}
         </button>
-
-        {err && <div style={{ color: 'crimson' }}>{err}</div>}
       </form>
 
       <div style={{ marginTop: 16 }}>
-        アカウントをお持ちでない方は <Link to="/register">新規登録</Link>
+        新規登録は <Link to="/register">こちら</Link>
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

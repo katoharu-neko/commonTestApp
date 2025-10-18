@@ -1,8 +1,20 @@
-import api from "./apiClient";
+// src/api/authApi.js
+import api from './apiClient';
 
-// name, email, password, roleId を送る
-export const register = (name, email, password, roleId) =>
-  api.post("/api/auth/register", { name, email, password, roleId });
+export async function register(payload) {
+  const res = await api.post('/api/auth/register', payload);
+  return res.data; // { message } or { token }（バックエンド実装に準拠）
+}
 
-export const login = (email, password) =>
-  api.post("/api/auth/login", { email, password });
+export async function login(payload) {
+  const res = await api.post('/api/auth/login', payload);
+  return res.data; // { token }
+}
+
+export async function verifyEmail(token) {
+  const res = await api.get('/api/auth/verify', { params: { token } });
+  return res.data; // { message }
+}
+
+const authApi = { register, login, verifyEmail };
+export default authApi;

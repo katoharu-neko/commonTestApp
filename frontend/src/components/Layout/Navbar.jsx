@@ -1,37 +1,30 @@
 // src/components/Layout/Navbar.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { isAuthed, clearToken } from '../../auth';
 
-const Navbar = () => {
-  const nav = useNavigate();
-  const authed = isAuthed();
+export default function Navbar() {
+  const navigate = useNavigate();
+  const token = localStorage.getItem('jwt');
 
-  const doLogout = () => {
-    clearToken();
-    nav('/login', { replace: true });
+  const handleLogout = () => {
+    localStorage.removeItem('jwt');
+    navigate('/login', { replace: true });
   };
 
   return (
-    <nav style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid #e5e7eb' }}>
-      <Link to="/dashboard">Dashboard</Link>
-      {authed && (
-        <>
-          <Link to="/charts/radar">Radar</Link>
-        </>
-      )}
+    <header style={{ borderBottom: '1px solid #eee', padding: '10px 16px', display: 'flex', gap: 12 }}>
+      <Link to="/dashboard">ダッシュボード</Link>
+      <Link to="/scores">スコア・レーダー</Link> {/* ← ここが ScoresRadarByYear に紐づく */}
       <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
-        {!authed ? (
-          <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
-          </>
+        {token ? (
+          <button onClick={handleLogout}>ログアウト</button>
         ) : (
-          <button onClick={doLogout} style={{ cursor: 'pointer' }}>Logout</button>
+          <>
+            <Link to="/login">ログイン</Link>
+            <Link to="/register">新規登録</Link>
+          </>
         )}
       </div>
-    </nav>
+    </header>
   );
-};
-
-export default Navbar;
+}

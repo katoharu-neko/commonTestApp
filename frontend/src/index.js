@@ -5,10 +5,10 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 
 const el = document.getElementById('root');
-const root = createRoot(el);
-
-root.render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>
+createRoot(el).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );

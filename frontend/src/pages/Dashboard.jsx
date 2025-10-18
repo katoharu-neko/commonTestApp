@@ -1,13 +1,11 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
 
-const Dashboard = () => {
+export default function Dashboard() {
   return (
     <div>
-      <h2 style={{ marginBottom: 12 }}>ダッシュボード</h2>
-      <p>メニューバーから「レーダーチャート（年度）」へ移動できます。</p>
+      <h2>ダッシュボード</h2>
+      <p>ログイン済みです。上のメニューから「スコア・レーダー」に移動できます。</p>
     </div>
   );
-};
-
-export default Dashboard;
+}

@@ -1,107 +1,101 @@
-import React, { useState } from "react";
-import { register } from "../api/authApi";
-import { useNavigate } from "react-router-dom";
+// src/pages/RegisterPage.jsx
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import authApi from '../api/authApi';
 
-const RegisterPage = () => {
-  const navigate = useNavigate();
+export default function RegisterPage() {
   const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    roleId: 2, // デフォルト: 一般ユーザー
+    name: '',
+    email: '',
+    password: '',
+    roleId: 2, // 2: 一般, 3: 教職
   });
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: name === "roleId" ? Number(value) : value }));
+    setForm((p) => ({ ...p, [name]: name === 'roleId' ? Number(value) : value }));
   };
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setErr('');
+    setMsg('');
+    setLoading(true);
     try {
-      const res = await register(form.name, form.email, form.password, form.roleId);
-      const token = res?.data?.token;
-      if (token) {
-        localStorage.setItem("jwt", token);
-      }
-      // 開発モードではメール検証URLはバックエンドのコンソールに出ます。
-      alert("仮登録しました。バックエンドのコンソールに出た確認URLを開いて本登録してください。");
-      navigate("/login");
-    } catch (err) {
-      console.error(err);
-      setError(err?.response?.data?.message || "登録に失敗しました");
+      const res = await authApi.register(form);
+      setMsg(res?.message || '仮登録が完了しました。メールをご確認ください。');
+    } catch (error) {
+      console.error(error);
+      setErr('登録に失敗しました。入力内容をご確認ください。');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="container" style={{ maxWidth: 420, marginTop: 40 }}>
-      <h2>新規ユーザー登録</h2>
-      <form onSubmit={onSubmit}>
-        <div className="mb-3">
-          <label className="form-label">お名前</label>
+    <div style={{ maxWidth: 520, margin: '40px auto' }}>
+      <h2>新規登録</h2>
+      <form onSubmit={onSubmit} autoComplete="on">
+        <div style={{ marginBottom: 12 }}>
+          <label>お名前</label>
           <input
+            type="text"
             name="name"
-            className="form-control"
             value={form.name}
             onChange={onChange}
-            autoComplete="name"
+            placeholder="山田 太郎"
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">メールアドレス</label>
+        <div style={{ marginBottom: 12 }}>
+          <label>メールアドレス</label>
           <input
-            name="email"
             type="email"
-            className="form-control"
+            name="email"
             value={form.email}
             onChange={onChange}
+            placeholder="you@example.com"
             autoComplete="email"
             required
           />
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">パスワード</label>
+        <div style={{ marginBottom: 12 }}>
+          <label>パスワード</label>
           <input
-            name="password"
             type="password"
-            className="form-control"
+            name="password"
             value={form.password}
             onChange={onChange}
+            placeholder="••••••••"
             autoComplete="new-password"
             required
           />
         </div>
 
-        {/* ロール選択（ADMIN は UI には出さない） */}
-        <div className="mb-3">
-          <label className="form-label">ロール</label>
-          <select
-            name="roleId"
-            className="form-select"
-            value={form.roleId}
-            onChange={onChange}
-          >
+        <div style={{ marginBottom: 12 }}>
+          <label>ユーザー区分</label>
+          <select name="roleId" value={form.roleId} onChange={onChange}>
             <option value={2}>一般ユーザー</option>
             <option value={3}>教職ユーザー</option>
           </select>
-          <div className="form-text">
-            管理者ロールは UI からは選択できません。
-          </div>
         </div>
 
-        {error && <div className="alert alert-danger">{error}</div>}
+        {err && <div style={{ color: 'crimson', marginBottom: 12 }}>{err}</div>}
+        {msg && <div style={{ color: 'green', marginBottom: 12 }}>{msg}</div>}
 
-        <button className="btn btn-primary" type="submit">
-          登録する
+        <button type="submit" disabled={loading}>
+          {loading ? '送信中…' : '登録する'}
         </button>
       </form>
+
+      <div style={{ marginTop: 16 }}>
+        すでにアカウントをお持ちの方は <Link to="/login">ログイン</Link>
+      </div>
     </div>
   );
-};
-
-export default RegisterPage;
+}

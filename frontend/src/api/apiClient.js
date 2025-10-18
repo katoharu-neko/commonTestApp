@@ -1,17 +1,18 @@
 // src/api/apiClient.js
 import axios from 'axios';
-import { getToken } from '../auth';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080', // 必要に応じて .env に逃がしてOK
+  baseURL: process.env.REACT_APP_API_BASE || 'http://localhost:8080',
   withCredentials: false,
 });
 
-// 認証ヘッダを自動付与
+// すべてのリクエストに JWT を付与
 api.interceptors.request.use((config) => {
-  const jwt = getToken();
-  if (jwt) {
-    config.headers.Authorization = `Bearer ${jwt}`;
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    delete config.headers.Authorization;
   }
   return config;
 });
