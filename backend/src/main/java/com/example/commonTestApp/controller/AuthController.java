@@ -23,17 +23,18 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping(value = "/register",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TokenResponse> register(@RequestBody RegisterRequest req) {
-        String token = authService.register(req.getName(), req.getEmail(), req.getPassword());
+        String token = authService.register(
+                req.getName(),
+                req.getEmail(),
+                req.getPassword(),
+                req.getRoleId()  // ★ 追加
+        );
         return ResponseEntity.ok(new TokenResponse(token));
     }
 
-    @PostMapping(value = "/login",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest req) {
         String token = authService.login(req.getEmail(), req.getPassword());
         return ResponseEntity.ok(new TokenResponse(token));

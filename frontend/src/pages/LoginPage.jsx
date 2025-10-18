@@ -1,66 +1,63 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import api from '../api/apiClient';
-import { setToken, isAuthenticated } from '../auth';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { authApi } from '../api/authApi';
+import { setToken } from '../auth';
 
 const LoginPage = () => {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState('test@example.com');
-  const [password, setPassword] = useState('password');
-  const [loading, setLoading] = useState(false);
+  const nav = useNavigate();
+  const location = useLocation();
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErr('');
-    setLoading(true);
+    if (!email.trim() || !pw) {
+      setErr('メールとパスワードを入力してください');
+      return;
+    }
     try {
-      const res = await api.post('/api/auth/login', { email, password });
-      setToken(res.data.token);
-      navigate('/dashboard', { replace: true });
+      setBusy(true);
+      const { token } = await authApi.login({ email: email.trim(), password: pw });
+      setToken(token);
+      nav(from, { replace: true });
     } catch (e) {
-      setErr('ログイン失敗：メールまたはパスワードを確認してください');
+      if (e?.response?.status === 403) setErr('メール認証が未完了です。メールをご確認ください。');
+      else setErr('ログインに失敗しました。メール/パスワードをご確認ください。');
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '80px auto', border: '1px solid #e5e7eb', borderRadius: 8, padding: 24 }}>
-      <h2 style={{ marginBottom: 16 }}>ログイン</h2>
+    <div style={{ maxWidth: 420, margin: '40px auto', padding: 24, border: '1px solid #e5e7eb', borderRadius: 12 }}>
+      <h2 style={{ marginTop: 0 }}>ログイン</h2>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label>
+        <label style={{ display: 'grid', gap: 6 }}>
           メールアドレス
-          <input
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            style={{ width: '100%', padding: 8, marginTop: 4 }}
-          />
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
         </label>
-        <label>
+
+        <label style={{ display: 'grid', gap: 6 }}>
           パスワード
-          <input
-            type="password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            style={{ width: '100%', padding: 8, marginTop: 4 }}
-          />
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
         </label>
-        {err && <div style={{ color: 'crimson' }}>{err}</div>}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
-        >
-          {loading ? '送信中…' : 'ログイン'}
+
+        <button disabled={busy} type="submit" style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #d1d5db' }}>
+          {busy ? '送信中…' : 'ログイン'}
         </button>
+
+        {err && <div style={{ color: 'crimson' }}>{err}</div>}
       </form>
+
+      <div style={{ marginTop: 16 }}>
+        アカウントをお持ちでない方は <Link to="/register">新規登録</Link>
+      </div>
     </div>
   );
 };

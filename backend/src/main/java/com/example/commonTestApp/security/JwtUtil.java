@@ -13,6 +13,10 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
+/**
+ * JWTの生成・検証ユーティリティ。
+ * subject に email を入れる前提。
+ */
 @Component
 public class JwtUtil {
 
@@ -21,42 +25,37 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${jwt.secret}") String base64Secret,
-            @Value("${jwt.expiration-ms}") long expirationMs
-    ) {
-        byte[] keyBytes = Decoders.BASE64.decode(base64Secret);
-        this.key = Keys.hmacShaKeyFor(keyBytes); // 256bit 以上必須
+            @Value("${jwt.expiration-ms:2592000000}") long expirationMs) {
+        // application.yml の Base64 文字列をデコードして 256bit 以上の鍵を生成
+        byte[] bytes = Decoders.BASE64.decode(base64Secret);
+        this.key = Keys.hmacShaKeyFor(bytes);
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String subjectEmail) {
+    /** email を subject に入れてトークンを発行 */
+    public String generateToken(String email) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
-                .setSubject(subjectEmail)
+                .setSubject(email)
                 .setIssuedAt(now)
                 .setExpiration(exp)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractSubject(String token) {
-        return getAllClaims(token).getSubject();
-    }
-
-    public boolean validate(String token) {
+    /** 受け取ったトークンから subject(email) を返す。検証失敗時は null */
+    public String getSubject(String token) {
         try {
-            getAllClaims(token); // 例外が出なければOK
-            return true;
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getSubject();
         } catch (Exception e) {
-            return false;
+            // 署名不正/有効期限切れ/改ざんなどは null
+            return null;
         }
-    }
-
-    private Claims getAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }

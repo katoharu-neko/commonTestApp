@@ -1,51 +1,36 @@
 // src/components/Layout/Navbar.jsx
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { logout } from '../../auth';
-
-const linkStyle = ({ isActive }) => ({
-  padding: '8px 12px',
-  borderRadius: 6,
-  textDecoration: 'none',
-  color: isActive ? '#fff' : '#111',
-  background: isActive ? '#2563eb' : 'transparent',
-});
+import { Link, useNavigate } from 'react-router-dom';
+import { isAuthed, clearToken } from '../../auth';
 
 const Navbar = () => {
-  const navigate = useNavigate();
+  const nav = useNavigate();
+  const authed = isAuthed();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
+  const doLogout = () => {
+    clearToken();
+    nav('/login', { replace: true });
   };
 
   return (
-    <header style={{
-      position: 'sticky', top: 0, zIndex: 10, background: '#fff',
-      borderBottom: '1px solid #e5e7eb'
-    }}>
-      <div style={{
-        maxWidth: 1080, margin: '0 auto', padding: '10px 16px',
-        display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'space-between'
-      }}>
-        <div style={{ fontWeight: 700 }}>Common Test App</div>
-
-        <nav style={{ display: 'flex', gap: 8 }}>
-          <NavLink to="/dashboard" style={linkStyle}>ダッシュボード</NavLink>
-          <NavLink to="/charts/radar" style={linkStyle}>レーダーチャート（年度）</NavLink>
-        </nav>
-
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '8px 12px', borderRadius: 6,
-            border: '1px solid #d1d5db', background: '#fff', cursor: 'pointer'
-          }}
-        >
-          ログアウト
-        </button>
+    <nav style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid #e5e7eb' }}>
+      <Link to="/dashboard">Dashboard</Link>
+      {authed && (
+        <>
+          <Link to="/charts/radar">Radar</Link>
+        </>
+      )}
+      <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+        {!authed ? (
+          <>
+            <Link to="/login">Login</Link>
+            <Link to="/register">Register</Link>
+          </>
+        ) : (
+          <button onClick={doLogout} style={{ cursor: 'pointer' }}>Logout</button>
+        )}
       </div>
-    </header>
+    </nav>
   );
 };
 
