@@ -1,6 +1,7 @@
 package com.example.commonTestApp.security;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
@@ -25,15 +26,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
+ // 中略（クラス宣言・DI などはそのまま）
+
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
-        // Swagger / Auth / error は素通し
+        // Swagger / Auth / 静的などは素通し（既存のまま）
         if (path.startsWith("/api/auth")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
@@ -43,34 +45,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Authorization: Bearer <token>
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (!StringUtils.hasText(header) || !header.startsWith("Bearer ")) {
+            // トークンなし → 認証なしのまま次へ（コントローラ側で @PreAuthorize があれば 401 になる）
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = header.substring(7);
         String email = jwtUtil.getSubject(token);
-        if (email == null) {
+        if (!StringUtils.hasText(email)) {
+            // 不正トークン → 認証なしで進める
             filterChain.doFilter(request, response);
             return;
         }
 
-        // DB からユーザを取得して権限（ROLE_XXX）を付与
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || user.getRole() == null || user.getRole().getName() == null) {
+        if (user == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String roleName = user.getRole().getName(); // 例: "ROLE_GENERAL"
-        var auth = new UsernamePasswordAuthenticationToken(
-                email,
-                null,
-                List.of(new SimpleGrantedAuthority(roleName)));
+        // ロールが null でも NPE にならないようにガード
+        String roleName = (user.getRole() != null && user.getRole().getName() != null)
+                ? user.getRole().getName()
+                : null;
 
+        List<SimpleGrantedAuthority> authorities =
+                (roleName != null)
+                        ? List.of(new SimpleGrantedAuthority(roleName))
+                        : Collections.emptyList(); // ← 空はこれにする
+
+        UsernamePasswordAuthenticationToken auth =
+                new UsernamePasswordAuthenticationToken(email, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(auth);
         filterChain.doFilter(request, response);
     }
+
 }

@@ -2,6 +2,7 @@ package com.example.commonTestApp.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,6 +10,8 @@ import com.example.commonTestApp.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    // これで role まで一括ロードされます
+    @EntityGraph(attributePaths = "role")
     boolean existsByEmail(String email);
     Optional<User> findByEmail(String email);
 }
