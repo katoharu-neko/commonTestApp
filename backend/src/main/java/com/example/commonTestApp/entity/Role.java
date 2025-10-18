@@ -4,21 +4,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "roles")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter
 public class Role {
     @Id
-    private Integer id; // 1,2,3 など
+    private Integer id;
 
     @Column(nullable = false, unique = true, length = 50)
-    private String name; // "ROLE_ADMIN" / "ROLE_GENERAL" / "ROLE_EDUCATOR"
+    private String name;
 }

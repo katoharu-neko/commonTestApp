@@ -11,7 +11,7 @@ import com.sendgrid.Response;
 import com.sendgrid.SendGrid;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email; // ← これが正しい Email
+import com.sendgrid.helpers.mail.objects.Email;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,23 +25,24 @@ public class MailService {
     @Value("${app.mail.from}")
     private String fromAddress;
 
-    // 宛先にアノテーションでバリデーションをかけたい場合は↓のように FQCN を使う
-    // public void sendPlainText(@jakarta.validation.constraints.Email String to, String subject, String content) {
+    /**
+     * 開発モード（sendgrid.apiKey 未設定）の場合は
+     * 送信せずにバックエンドのログへ本文/URLを出力します。
+     */
     public void sendPlainText(String to, String subject, String content) {
         if (sendgridApiKey == null || sendgridApiKey.isBlank()) {
-            // 開発モード：メール送らずログに出す
             log.warn("[DEV] sendgrid.apiKey 未設定。メールは送信せずログ出力のみ。");
             log.info("=== MAIL (DEV) ===\nTO: {}\nSUBJECT: {}\n{}\n==================", to, subject, content);
             return;
         }
 
-        Email from = new Email(fromAddress);
-        Email toEmail = new Email(to);
-        Content body = new Content("text/plain", content);
-        Mail mail = new Mail(from, subject, toEmail, body);
-
-        Request request = new Request();
         try {
+            Email from = new Email(fromAddress);
+            Email toEmail = new Email(to);
+            Content body = new Content("text/plain", content);
+            Mail mail = new Mail(from, subject, toEmail, body);
+
+            Request request = new Request();
             request.setMethod(Method.POST);
             request.setEndpoint("mail/send");
             request.setBody(mail.build());

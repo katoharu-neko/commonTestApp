@@ -1,5 +1,6 @@
 package com.example.commonTestApp.security;
 
+import java.util.Base64;
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -9,14 +10,8 @@ import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
-/**
- * JWTの生成・検証ユーティリティ。
- * subject に email を入れる前提。
- */
 @Component
 public class JwtUtil {
 
@@ -25,36 +20,32 @@ public class JwtUtil {
 
     public JwtUtil(
             @Value("${jwt.secret}") String base64Secret,
-            @Value("${jwt.expiration-ms:2592000000}") long expirationMs) {
-        // application.yml の Base64 文字列をデコードして 256bit 以上の鍵を生成
-        byte[] bytes = Decoders.BASE64.decode(base64Secret);
+            @Value("${jwt.expiration-ms}") long expirationMs) {
+        // application.yml の base64 をバイト列に
+        byte[] bytes = Base64.getDecoder().decode(base64Secret);
         this.key = Keys.hmacShaKeyFor(bytes);
         this.expirationMs = expirationMs;
     }
 
-    /** email を subject に入れてトークンを発行 */
     public String generateToken(String email) {
-        Date now = new Date();
-        Date exp = new Date(now.getTime() + expirationMs);
+        long now = System.currentTimeMillis();
         return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(now)
-                .setExpiration(exp)
-                .signWith(key, SignatureAlgorithm.HS256)
+                .subject(email)
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + expirationMs))
+                .signWith(key)
                 .compact();
     }
 
-    /** 受け取ったトークンから subject(email) を返す。検証失敗時は null */
     public String getSubject(String token) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
+            Claims c = Jwts.parser()
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.getSubject();
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return c.getSubject();
         } catch (Exception e) {
-            // 署名不正/有効期限切れ/改ざんなどは null
             return null;
         }
     }
