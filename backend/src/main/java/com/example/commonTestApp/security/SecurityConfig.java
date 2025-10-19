@@ -19,11 +19,11 @@ import com.example.commonTestApp.repository.UserRepository;
 @Configuration
 public class SecurityConfig {
 
-    // ★ JwtAuthenticationFilter を Bean として登録（DIで JwtUtil / UserRepository を注入）
-	@Bean
-	public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
-	    return new JwtAuthenticationFilter(jwtUtil, userRepository);
-	}
+    // JwtAuthenticationFilter を Bean 登録（DIで JwtUtil / UserRepository を注入）
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+        return new JwtAuthenticationFilter(jwtUtil, userRepository);
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -34,13 +34,22 @@ public class SecurityConfig {
             .csrf(c -> c.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
+                // Swagger / Auth / Error は常に許可
                 .requestMatchers(
-                        "/api/auth/**",
-                        "/swagger-ui.html",
-                        "/swagger-ui/**",
-                        "/v3/api-docs/**",
-                        "/error"
+                    "/api/auth/**",
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/error"
                 ).permitAll()
+                // SPA の静的ファイルとトップ
+                .requestMatchers(
+                    "/", "/index.html",
+                    "/static/**", "/assets/**",
+                    "/*.js", "/*.css", "/*.map",
+                    "/favicon.ico", "/logo*"
+                ).permitAll()
+                // それ以外は認証必須（API など）
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

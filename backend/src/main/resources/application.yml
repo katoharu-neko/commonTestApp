@@ -1,8 +1,53 @@
-# backend/src/main/resources/application.yml
+# ========= 共通（両プロファイルで有効） =========
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
+  profiles:
+    active: dev
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  mvc:
+    # 暫定：既存の {var:regex} マッピングが残っていても起動できるよう旧パーサに戻す
+    matching-strategy: ant_path_matcher
+    
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    persistAuthorization: true
+    display-request-duration: true
+    operations-sorter: method
+    doc-expansion: none
+
+# JWT（共通既定。prod は環境変数で上書き推奨）
+jwt:
+  # Base64 で 32byte 以上を推奨。prod は環境変数 JWT_SECRET で上書き。
+  secret: ${JWT_SECRET:QkR0dGJrZ0p5c0o3cU1kV1Z2c1ZqV2ZrQ0pYTlR2M0l5cU1MN29kT1hYZ3ZHS2JXbGZFM1lxc1BOWk1SVGc9PQ==}
+  expiration-ms: ${JWT_EXP_MS:2592000000} # 30日
+
+# メール（SendGrid 未設定なら使われずログのみ）
+sendgrid:
+  apiKey: ${SENDGRID_API_KEY:}
+
+app:
+  mail:
+    from: ${APP_MAIL_FROM:no-reply@example.com}
+  frontendBaseUrl: ${FRONTEND_BASE_URL:http://localhost:3000}
+  backendBaseUrl: ${BACKEND_BASE_URL:http://localhost:8080}
+
+# ========= dev プロファイル =========
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
   datasource:
     url: jdbc:mysql://localhost:8889/common_test_app?useSSL=false&serverTimezone=Asia/Tokyo
     username: root
@@ -17,35 +62,22 @@ spring:
       hibernate:
         format_sql: true
 
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
+# ========= prod プロファイル（Heroku用） =========
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
 
-springdoc:
-  api-docs:
-    enabled: true
-    path: /v3/api-docs
-  swagger-ui:
-    enabled: true
-    path: /swagger-ui.html
-    try-it-out-enabled: true
-    persistAuthorization: true
-    display-request-duration: true
-    operations-sorter: method
-    doc-expansion: none
+  datasource:
+    # Heroku の Config Vars で設定してください（DB_URL / DB_USER / DB_PASS）
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-# ← ここが今回のクラッシュ原因（必須）
-jwt:
-  # 32バイト以上の秘密鍵(Base64)。下は開発用サンプルです
-  secret: "QkR0dGJrZ0p5c0o3cU1kV1Z2c1ZqV2ZrQ0pYTlR2M0l5cU1MN29kT1hYZ3ZHS2JXbGZFM1lxc1BOWk1SVGc9PQ=="
-  expiration-ms: 2592000000  # 30日
-
-# 開発時メール送信（SendGrid未設定ならログ出力のみ）
-sendgrid:
-  apiKey: ""  # 空なら送らずログ出力
-
-app:
-  mail:
-    from: "no-reply@example.com"
-  frontendBaseUrl: "http://localhost:3000"
-  backendBaseUrl: "http://localhost:8080" 
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
