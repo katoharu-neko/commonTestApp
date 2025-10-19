@@ -23,33 +23,47 @@ const ScoresRadarByYear = () => {
   const [years, setYears] = useState([]);
   const [viewYear, setViewYear] = useState('');
 
+  const [loadingInit, setLoadingInit] = useState(true);
+  const [initError, setInitError] = useState('');
+
   // ---- 初期ロード ----
   useEffect(() => {
     const bootstrap = async () => {
-      // 1) 自分のスコア
-      const resScores = await api.get('/api/scores/me');
-      const list = resScores.data || [];
-      setScores(list);
+      try {
+        setInitError('');
+        setLoadingInit(true);
 
-      // 年度候補
-      const ys = Array.from(new Set(list.map(s => s.year))).sort();
-      setYears(ys);
-      if (ys.length) {
-        setViewYear(ys[ys.length - 1]);
-        if (!year) setYear(ys[ys.length - 1]);
-      } else {
-        const now = new Date().getFullYear();
-        setViewYear(String(now));
-        if (!year) setYear(String(now));
+        // 1) 自分のスコア
+        const resScores = await api.get('/api/scores/me');
+        const list = Array.isArray(resScores.data) ? resScores.data : [];
+        setScores(list);
+
+        // 年度候補
+        const ys = Array.from(new Set(list.map(s => s.year))).sort();
+        setYears(ys);
+        if (ys.length) {
+          const latest = ys[ys.length - 1];
+          setViewYear(String(latest));
+          if (!year) setYear(String(latest));
+        } else {
+          const now = new Date().getFullYear();
+          setViewYear(String(now));
+          if (!year) setYear(String(now));
+        }
+
+        // 2) 科目とカテゴリ
+        const [resSubjects, resCats] = await Promise.all([
+          api.get('/api/subjects'),            // [{id,category,name,isActive,fullScore}, ...]
+          api.get('/api/subjects/categories')  // ["英語","数学",...]
+        ]);
+        setSubjects(Array.isArray(resSubjects.data) ? resSubjects.data : []);
+        setCategories(Array.isArray(resCats.data) ? resCats.data : []);
+      } catch (e) {
+        console.error(e);
+        setInitError('初期データの取得に失敗しました。認証・サーバーログを確認してください。');
+      } finally {
+        setLoadingInit(false);
       }
-
-      // 2) 科目とカテゴリ
-      const [resSubjects, resCats] = await Promise.all([
-        api.get('/api/subjects'),            // [{id,category,name,isActive,fullScore}, ...]
-        api.get('/api/subjects/categories')  // ["英語","数学",...]
-      ]);
-      setSubjects(resSubjects.data || []);
-      setCategories(resCats.data || []);
     };
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,20 +105,22 @@ const ScoresRadarByYear = () => {
         score: numericScore,
         year: Number(year)
       });
-      // 最新の自分のスコアを再取得
+
+      // 最新の自分のスコアを再取得（即時反映）
       const res = await api.get('/api/scores/me');
-      const list = res.data || [];
+      const list = Array.isArray(res.data) ? res.data : [];
       setScores(list);
 
       // 年度候補を更新
       const ys = Array.from(new Set(list.map(s => s.year))).sort();
       setYears(ys);
       // ビューの年度が未設定なら最新に
-      if (!viewYear && ys.length) setViewYear(ys[ys.length - 1]);
+      if (!viewYear && ys.length) setViewYear(String(ys[ys.length - 1]));
 
       // フォームは得点だけリセット（連続入力が楽なように）
       setScore('');
     } catch (err) {
+      console.error(err);
       setFormError('登録に失敗しました。ネットワーク・認証・サーバーログを確認してください。');
     } finally {
       setSubmitting(false);
@@ -119,7 +135,7 @@ const ScoresRadarByYear = () => {
     const inYear = scores.filter(s => String(s.year) === String(viewYear));
     if (!inYear.length) return { indicator: [], data: [] };
 
-    // その年度に出現した科目一覧
+    // その年度に出現した科目一覧（重複排除）
     const subjectNames = Array.from(new Set(inYear.map(s => s.subject)));
 
     // 各科目の満点を subjects テーブルから拾う（なければ100）
@@ -131,7 +147,7 @@ const ScoresRadarByYear = () => {
     // radar の軸（maxは100固定＝得点率%）
     const indicator = subjectNames.map(name => ({ name, max: 100 }));
 
-    // 各科目の「最後のスコア」を％換算（平均にしたい場合はここで平均化へ変更）
+    // 各科目の「最後のスコア」を％換算（平均にしたい場合はここを平均化に変える）
     const percentValues = subjectNames.map(name => {
       const items = inYear.filter(i => i.subject === name);
       const last = items[items.length - 1]; // 最後の点を採用
@@ -159,7 +175,13 @@ const ScoresRadarByYear = () => {
 
   // ---- UI ----
   return (
-    <div>
+    <div style={{ padding: 24 }}>
+      <h2 style={{ marginTop: 0 }}>スコア管理／レーダーチャート</h2>
+
+      {/* 初期ローディング・エラー */}
+      {loadingInit && <p>読み込み中...</p>}
+      {initError && <p style={{ color: 'crimson' }}>{initError}</p>}
+
       {/* 入力フォーム */}
       <section style={{ marginBottom: 24, border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
         <h3 style={{ marginTop: 0 }}>スコア入力</h3>
@@ -234,7 +256,7 @@ const ScoresRadarByYear = () => {
       {/* 年度セレクト + レーダーチャート（％） */}
       <section>
         <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ margin: 0 }}>レーダーチャート（年度・％）</h2>
+          <h3 style={{ margin: 0 }}>レーダーチャート（年度・％）</h3>
           <select value={viewYear} onChange={e => setViewYear(e.target.value)} style={{ padding: 6 }}>
             {years.length ? years.map(y => <option key={y} value={y}>{y}</option>) : (
               <option value={viewYear}>{viewYear}</option>

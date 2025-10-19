@@ -1,30 +1,33 @@
-// src/components/Layout/Navbar.jsx
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const navigate = useNavigate();
-  const token = localStorage.getItem('jwt');
+  const token = localStorage.getItem("token");
 
-  const handleLogout = () => {
-    localStorage.removeItem('jwt');
-    navigate('/login', { replace: true });
+  const onLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login", { replace: true });
   };
 
   return (
-    <header style={{ borderBottom: '1px solid #eee', padding: '10px 16px', display: 'flex', gap: 12 }}>
-      <Link to="/dashboard">ダッシュボード</Link>
-      <Link to="/scores">スコア・レーダー</Link> {/* ← ここが ScoresRadarByYear に紐づく */}
-      <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+    <nav style={{ padding: "8px 16px", borderBottom: "1px solid #eee" }}>
+      <NavLink to="/dashboard" style={{ marginRight: 12 }}>
+        ダッシュボード
+      </NavLink>
+      <NavLink to="/scores/radar" style={{ marginRight: 12 }}>
+        レーダーチャート
+      </NavLink>
+      <span style={{ float: "right" }}>
         {token ? (
-          <button onClick={handleLogout}>ログアウト</button>
+          <button onClick={onLogout}>ログアウト</button>
         ) : (
           <>
-            <Link to="/login">ログイン</Link>
-            <Link to="/register">新規登録</Link>
+            <NavLink to="/login" style={{ marginRight: 12 }}>ログイン</NavLink>
+            <NavLink to="/register">新規登録</NavLink>
           </>
         )}
-      </div>
-    </header>
+      </span>
+    </nav>
   );
 }
