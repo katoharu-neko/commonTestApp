@@ -1,22 +1,53 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<build>
+  <plugins>
+    <plugin>
+      <groupId>com.github.eirslett</groupId>
+      <artifactId>frontend-maven-plugin</artifactId>
+      <version>1.15.0</version>
+      <configuration>
+        <!-- フロントのディレクトリ -->
+        <workingDirectory>../frontend</workingDirectory>
+        <!-- Node/npm の展開先（未指定でも workingDirectory/node 配下になるが明示） -->
+        <installDirectory>../frontend</installDirectory>
+        <!-- Heroku-24 でも動く無難なバージョンを固定 -->
+        <nodeVersion>v20.17.0</nodeVersion>
+        <npmVersion>10.8.2</npmVersion>
+      </configuration>
+      <executions>
+        <!-- まず Node と npm を入れる -->
+        <execution>
+          <id>install-node-and-npm</id>
+          <goals>
+            <goal>install-node-and-npm</goal>
+          </goals>
+          <!-- validate など早いフェーズでOK -->
+          <phase>validate</phase>
+        </execution>
 
-  <modelVersion>4.0.0</modelVersion>
+        <!-- 依存を入れる -->
+        <execution>
+          <id>npm-ci</id>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <phase>generate-resources</phase>
+          <configuration>
+            <arguments>ci --no-audit --no-fund</arguments>
+          </configuration>
+        </execution>
 
-  <!-- ルートは集約用。モジュールに backend をぶら下げる -->
-  <groupId>com.example</groupId>
-  <artifactId>commonTestApp-parent</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>commonTestApp-parent</name>
-
-  <!-- Spring Boot の親は backend/pom.xml 側で指定済みなのでここでは不要 -->
-
-  <modules>
-    <module>backend</module>
-  </modules>
-
-  <!-- 何もビルド設定を持たせない（全部 backend 側に任せる） -->
-</project>
+        <!-- ビルドする（必要なら） -->
+        <execution>
+          <id>npm-build</id>
+          <goals>
+            <goal>npm</goal>
+          </goals>
+          <phase>prepare-package</phase>
+          <configuration>
+            <arguments>run build</arguments>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
