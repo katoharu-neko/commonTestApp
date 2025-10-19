@@ -2,6 +2,7 @@ package com.example.commonTestApp.security;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -63,10 +64,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            // 任意：application.yml の app.frontendBaseUrl を拾う（無ければ*herokuapp.comも許可）
+            @Value("${app.frontendBaseUrl:http://localhost:3000}") String frontendBaseUrl) {
+
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
-        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+
+        // 開発: localhost (3000, 8080 など)
+        config.setAllowedOriginPatterns(List.of(
+            "http://localhost:*",
+            "https://*.herokuapp.com",  // 本番: Heroku ドメインをパターン許可
+            frontendBaseUrl             // 明示指定されたURLも許可
+        ));
+
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
