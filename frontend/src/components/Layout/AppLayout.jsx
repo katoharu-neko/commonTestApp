@@ -1,14 +1,15 @@
 // src/components/Layout/AppLayout.jsx
 import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar'; // ← 大小文字を実体に合わせる
+import Navbar from './Navbar';
 
-export default function AppLayout() {
+export default function AppLayout({ children }) {
   return (
-    <div>
-      <Navbar />
-      <main style={{ padding: 16 }}>
-        <Outlet />
+    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <header>
+        <Navbar />
+      </header>
+      <main style={{ flex: 1, padding: 16 }}>
+        {children}
       </main>
     </div>
   );

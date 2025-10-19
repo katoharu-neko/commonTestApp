@@ -1,7 +1,7 @@
 package com.example.commonTestApp.security;
 
 import java.io.IOException;
-import java.util.Collections; // ← これ（io.jsonwebtoken.lang.Collections ではない）
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.http.HttpHeaders;
@@ -27,12 +27,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserRepository userRepository;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
 
+        // 認証不要系は素通し
         if (path.startsWith("/api/auth")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs")
@@ -55,14 +57,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // ★ fetch join 版で取得（role を同時ロード）
+        // ★ ロールを fetch 済みで取得（LazyInitializationException 回避）
         User user = userRepository.findByEmailFetchRole(email).orElse(null);
         if (user == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // role が null の可能性にも配慮
         String roleName = (user.getRole() != null && user.getRole().getName() != null)
                 ? user.getRole().getName()
                 : null;

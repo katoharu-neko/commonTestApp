@@ -20,10 +20,10 @@ import com.example.commonTestApp.repository.UserRepository;
 public class SecurityConfig {
 
     // ★ JwtAuthenticationFilter を Bean として登録（DIで JwtUtil / UserRepository を注入）
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
-        return new JwtAuthenticationFilter(jwtUtil, userRepository);
-    }
+	@Bean
+	public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+	    return new JwtAuthenticationFilter(jwtUtil, userRepository);
+	}
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
