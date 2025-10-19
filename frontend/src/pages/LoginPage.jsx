@@ -1,78 +1,80 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import authApi from '../api/authApi';
+import { useNavigate, NavLink } from 'react-router-dom';
+import api from '../api/apiClient';
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState('');
+  const nav = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const onChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    setErr('');
-    setLoading(true);
+    setError('');
+
+    if (!email || !password) {
+      setError('メールアドレスとパスワードを入力してください。');
+      return;
+    }
+
     try {
-      const { token } = await authApi.login(form);
+      setSubmitting(true);
+      const res = await api.post('/api/auth/login', { email, password });
+      // ← バックエンドのキー名に合わせる
+      const token = res?.data?.token || res?.data?.accessToken || res?.data?.jwt;
       if (!token) {
-        throw new Error('トークンが取得できませんでした');
+        console.log('login response:', res?.data);
+        setError('サーバーからトークンが返りませんでした。レスポンス形式を確認してください。');
+        return;
       }
-      localStorage.setItem('jwt', token);
-      // ルーター状態とガードの競合を避けるためハードリダイレクト
-      window.location.replace('/dashboard');
-    } catch (error) {
-      console.error(error);
-      setErr('メールアドレスまたはパスワードが正しくありません。');
+      localStorage.setItem('token', token);
+      nav('/', { replace: true });
+    } catch (err) {
+      setError('ログインに失敗しました。メール・パスワードをご確認ください。');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '40px auto' }}>
+    <div style={{ maxWidth: 380, margin: '40px auto' }}>
       <h2>ログイン</h2>
-      <form onSubmit={onSubmit} autoComplete="on">
-        <div style={{ marginBottom: 12 }}>
-          <label>メールアドレス</label>
+      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
+        <label style={{ display: 'grid', gap: 6 }}>
+          メールアドレス
           <input
             type="email"
-            name="email"
-            value={form.email}
-            onChange={onChange}
-            className="input"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            autoComplete="username"
             placeholder="you@example.com"
-            autoComplete="email"
-            required
+            style={{ padding: 10 }}
           />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>パスワード</label>
+        </label>
+        <label style={{ display: 'grid', gap: 6 }}>
+          パスワード
           <input
             type="password"
-            name="password"
-            value={form.password}
-            onChange={onChange}
-            className="input"
-            placeholder="••••••••"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
             autoComplete="current-password"
-            required
+            placeholder="••••••••"
+            style={{ padding: 10 }}
           />
-        </div>
-
-        {err && <div style={{ color: 'crimson', marginBottom: 12 }}>{err}</div>}
-
-        <button type="submit" disabled={loading}>
-          {loading ? '送信中…' : 'ログイン'}
+        </label>
+        <button type="submit" disabled={submitting} style={{ padding: '10px 12px' }}>
+          {submitting ? '送信中…' : 'ログイン'}
         </button>
-      </form>
 
-      <div style={{ marginTop: 16 }}>
-        新規登録は <Link to="/register">こちら</Link>
-      </div>
+        {error && <div style={{ color: 'crimson' }}>{error}</div>}
+
+        <div>
+          アカウントがない方は <NavLink to="/register">新規登録</NavLink>
+        </div>
+      </form>
     </div>
   );
 }
