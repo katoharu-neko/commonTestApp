@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- ルートは集約用。モジュールに backend をぶら下げる -->
+  <groupId>com.example</groupId>
+  <artifactId>commonTestApp-parent</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>commonTestApp-parent</name>
+
+  <!-- Spring Boot の親は backend/pom.xml 側で指定済みなのでここでは不要 -->
+
+  <modules>
+    <module>backend</module>
+  </modules>
+
+  <!-- 何もビルド設定を持たせない（全部 backend 側に任せる） -->
+</project>
