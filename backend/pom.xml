@@ -20,8 +20,9 @@
 
   <properties>
     <java.version>21</java.version>
-    <!-- Node を Heroku/Maven で呼び出すために PATH が通っている前提。 -->
-    <!-- もし Heroku 上で node が無い場合は heroku/nodejs buildpack を前段に追加してください。 -->
+    <!-- frontend-maven-plugin が入れる Node のバージョン -->
+    <node.version>v20.16.0</node.version>
+    <npm.version>10.8.1</npm.version>
   </properties>
 
   <dependencies>
@@ -155,41 +156,48 @@
         </configuration>
       </plugin>
 
-      <!-- (重要) frontend を Maven ライフサイクルでビルド -->
+      <!-- ここが変更点：Node を Maven 側で取得して frontend をビルド -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.5.0</version>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.15.0</version>
         <executions>
+          <!-- Node と npm をダウンロード＆インストール -->
           <execution>
-            <id>npm-ci</id>
+            <id>install-node-and-npm</id>
+            <goals><goal>install-node-and-npm</goal></goals>
             <phase>generate-resources</phase>
-            <goals><goal>exec</goal></goals>
             <configuration>
-              <executable>npm</executable>
-              <workingDirectory>${project.basedir}/../frontend</workingDirectory>
-              <arguments>
-                <argument>ci</argument>
-              </arguments>
+              <nodeVersion>${node.version}</nodeVersion>
+              <npmVersion>${npm.version}</npmVersion>
             </configuration>
           </execution>
+
+          <!-- npm ci (frontend ディレクトリで実行) -->
+          <execution>
+            <id>npm-ci</id>
+            <goals><goal>npm</goal></goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <arguments>ci</arguments>
+              <workingDirectory>../frontend</workingDirectory>
+            </configuration>
+          </execution>
+
+          <!-- npm run build -->
           <execution>
             <id>npm-build</id>
+            <goals><goal>npm</goal></goals>
             <phase>generate-resources</phase>
-            <goals><goal>exec</goal></goals>
             <configuration>
-              <executable>npm</executable>
-              <workingDirectory>${project.basedir}/../frontend</workingDirectory>
-              <arguments>
-                <argument>run</argument>
-                <argument>build</argument>
-              </arguments>
+              <arguments>run build</arguments>
+              <workingDirectory>../frontend</workingDirectory>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- (重要) build された frontend を /static へコピー -->
+      <!-- build された frontend を /static へコピー（既存のまま） -->
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <version>3.3.1</version>
