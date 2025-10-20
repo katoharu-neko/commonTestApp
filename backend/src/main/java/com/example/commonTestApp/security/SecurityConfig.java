@@ -20,37 +20,49 @@ import com.example.commonTestApp.repository.UserRepository;
 @Configuration
 public class SecurityConfig {
 
-    // JwtAuthenticationFilter を Bean 登録（DIで JwtUtil / UserRepository を注入）
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserRepository userRepository) {
         return new JwtAuthenticationFilter(jwtUtil, userRepository);
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http,
-                                           JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
             .httpBasic(h -> h.disable())
             .formLogin(f -> f.disable())
             .csrf(c -> c.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                // Swagger / Auth / Error は常に許可
+                // 認証不要API（ログイン・登録など）
+                .requestMatchers("/api/auth/**").permitAll()
+
+                // Swagger / OpenAPI
                 .requestMatchers(
-                    "/api/auth/**",
                     "/swagger-ui.html",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**",
-                    "/error"
+                    "/v3/api-docs/**"
                 ).permitAll()
-                // SPA の静的ファイルとトップ
+
+                // エラーページ
+                .requestMatchers("/error").permitAll()
+
+                // SPAの静的ファイル（Reactビルド成果物）
                 .requestMatchers(
-                    "/", "/index.html",
-                    "/static/**", "/assets/**",
-                    "/*.js", "/*.css", "/*.map",
-                    "/favicon.ico", "/logo*"
+                    "/",
+                    "/index.html",
+                    "/manifest.json",
+                    "/asset-manifest.json",
+                    "/favicon.ico",
+                    "/robots.txt",
+                    "/logo192.png",
+                    "/logo512.png",
+                    "/static/**",
+                    "/assets/**",
+                    // 直配信される可能性のある拡張子も一応許可
+                    "/*.js", "/*.css", "/*.map"
                 ).permitAll()
-                // それ以外は認証必須（API など）
+
+                // それ以外は認証必須
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -63,25 +75,25 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // CORSはローカル開発向け（本番は同一オリジンなので実質適用されない）
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            // 任意：application.yml の app.frontendBaseUrl を拾う（無ければ*herokuapp.comも許可）
             @Value("${app.frontendBaseUrl:http://localhost:3000}") String frontendBaseUrl) {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        // 開発: localhost (3000, 8080 など)
+        // ローカル(3000) & Heroku ドメイン & 任意指定を許可
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
-            "https://*.herokuapp.com",  // 本番: Heroku ドメインをパターン許可
-            frontendBaseUrl             // 明示指定されたURLも許可
+            "https://*.herokuapp.com",
+            frontendBaseUrl
         ));
-
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // API全体にCORS設定（必要に応じて "/api/**" に限定してもOK）
         source.registerCorsConfiguration("/**", config);
         return source;
     }
