@@ -1,56 +1,23 @@
+<!-- common-test-app/pom.xml （親POM）-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-      <groupId>com.github.eirslett</groupId>
-      <artifactId>frontend-maven-plugin</artifactId>
-      <version>1.15.0</version>
+  <groupId>com.example</groupId>
+  <artifactId>common-test-app</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
     <module>backend</module>
-    <!-- フロントは Maven 管理外なら modules に入れない -->
   </modules>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>com.github.eirslett</groupId>
-        <artifactId>frontend-maven-plugin</artifactId>
-        <version>1.15.0</version>
-        <configuration>
-          <!-- 親から見た frontend への相対パス -->
-          <workingDirectory>frontend</workingDirectory>
-          <installDirectory>frontend</installDirectory>
-          <nodeVersion>v20.17.0</nodeVersion>
-          <npmVersion>10.8.2</npmVersion>
-        </configuration>
-        <executions>
-          <execution>
-            <id>install-node-and-npm</id>
-            <goals><goal>install-node-and-npm</goal></goals>
-            <phase>validate</phase>
-          </execution>
-          <execution>
-            <id>npm-ci</id>
-            <goals><goal>npm</goal></goals>
-            <phase>generate-resources</phase>
-            <configuration>
-              <arguments>ci --no-audit --no-fund</arguments>
-            </configuration>
-          </execution>
-          <execution>
-            <id>npm-build</id>
-            <goals><goal>npm</goal></goals>
-            <phase>prepare-package</phase>
-            <configuration>
-              <arguments>run build</arguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+  <properties>
+    <java.version>17</java.version>
+    <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
+    <node.version>v20.16.0</node.version>
+    <npm.version>10.8.1</npm.version>
+  </properties>
 </project>

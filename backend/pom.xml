@@ -19,10 +19,15 @@
   <description>Common Test App Backend</description>
 
   <properties>
-    <java.version>21</java.version>
-    <!-- frontend-maven-plugin が入れる Node のバージョン -->
+    <java.version>17</java.version>
+
+    <!-- frontend-maven-plugin & Node/NPM -->
+    <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
     <node.version>v20.16.0</node.version>
     <npm.version>10.8.1</npm.version>
+
+    <!-- フロントのビルド出力先（React=build、Vite=dist）-->
+    <frontend.build.dir>${project.basedir}/../frontend/build</frontend.build.dir>
   </properties>
 
   <dependencies>
@@ -52,12 +57,10 @@
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-mysql</artifactId>
     </dependency>
-
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
@@ -90,7 +93,7 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Development / Utility -->
+    <!-- Dev / Utility -->
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
@@ -110,7 +113,6 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-test</artifactId>
@@ -128,11 +130,12 @@
   <build>
     <plugins>
 
-      <!-- Lombok annotation processing -->
+      <!-- Java 17 / Lombok AP -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
+          <release>${java.version}</release>
           <annotationProcessorPaths>
             <path>
               <groupId>org.projectlombok</groupId>
@@ -142,7 +145,7 @@
         </configuration>
       </plugin>
 
-      <!-- Spring Boot plugin -->
+      <!-- Spring Boot -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
@@ -156,16 +159,27 @@
         </configuration>
       </plugin>
 
-      <!-- ここが変更点：Node を Maven 側で取得して frontend をビルド -->
+      <!-- Frontend: Node を frontend/ に入れて npm を実行 -->
       <plugin>
         <groupId>com.github.eirslett</groupId>
         <artifactId>frontend-maven-plugin</artifactId>
-        <version>1.15.0</version>
+        <version>${frontend-maven-plugin.version}</version>
+
+        <!-- すべての execution に共通で適用 -->
+        <configuration>
+          <!-- npm 実行ディレクトリ -->
+          <workingDirectory>../frontend</workingDirectory>
+          <!-- Node/NPM のインストール先（ここが肝心） -->
+          <installDirectory>../frontend</installDirectory>
+        </configuration>
+
         <executions>
           <!-- Node と npm をダウンロード＆インストール -->
           <execution>
             <id>install-node-and-npm</id>
-            <goals><goal>install-node-and-npm</goal></goals>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
             <phase>generate-resources</phase>
             <configuration>
               <nodeVersion>${node.version}</nodeVersion>
@@ -173,31 +187,33 @@
             </configuration>
           </execution>
 
-          <!-- npm ci (frontend ディレクトリで実行) -->
+          <!-- npm ci -->
           <execution>
             <id>npm-ci</id>
-            <goals><goal>npm</goal></goals>
+            <goals>
+              <goal>npm</goal>
+            </goals>
             <phase>generate-resources</phase>
             <configuration>
-              <arguments>ci</arguments>
-              <workingDirectory>../frontend</workingDirectory>
+    			<arguments>ci --no-audit --no-fund --loglevel verbose</arguments>
             </configuration>
           </execution>
 
           <!-- npm run build -->
           <execution>
             <id>npm-build</id>
-            <goals><goal>npm</goal></goals>
+            <goals>
+              <goal>npm</goal>
+            </goals>
             <phase>generate-resources</phase>
             <configuration>
               <arguments>run build</arguments>
-              <workingDirectory>../frontend</workingDirectory>
             </configuration>
           </execution>
         </executions>
       </plugin>
 
-      <!-- build された frontend を /static へコピー（既存のまま） -->
+      <!-- ビルドされたフロントを /static へコピー -->
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <version>3.3.1</version>
@@ -205,12 +221,14 @@
           <execution>
             <id>copy-frontend</id>
             <phase>process-resources</phase>
-            <goals><goal>copy-resources</goal></goals>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
             <configuration>
               <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/../frontend/build</directory>
+                  <directory>${frontend.build.dir}</directory>
                 </resource>
               </resources>
             </configuration>
