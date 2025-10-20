@@ -1,6 +1,8 @@
 package com.example.commonTestApp.service;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,12 +24,47 @@ public class MailService {
     @Value("${sendgrid.apiKey:}")
     private String sendgridApiKey;
 
-    @Value("${app.mail.from}")
+    @Value("${app.mail.from:no-reply@example.com}")
     private String fromAddress;
 
     /**
-     * 開発モード（sendgrid.apiKey 未設定）の場合は
-     * 送信せずにバックエンドのログへ本文/URLを出力します。
+     * 外向きの公開URL（Heroku では PUBLIC_BASE_URL で上書き）
+     * 例: https://<your-app>.herokuapp.com
+     */
+    @Value("${app.publicBaseUrl:http://localhost:8080}")
+    private String publicBaseUrl;
+
+    /**
+     * ユーザーのメールアドレス確認用メールを送る。
+     * token を URL に埋め込み、バックエンドの検証APIへ誘導します。
+     */
+    public void sendVerificationEmail(String to, String token) {
+        final String verifyUrl = buildVerifyUrl(token);
+        final String subject = "メールアドレスの確認";
+        final String body =
+            "以下のリンクをクリックしてメール認証を完了してください。\n" +
+            verifyUrl + "\n\n" +
+            "このリンクには有効期限がある場合があります。お早めにお手続きください。";
+
+        sendPlainText(to, subject, body);
+    }
+
+    /**
+     * 検証用URLを生成（APIへ直リンク）
+     * 例: https://<app>/api/auth/verify-email?token=xxxx
+     */
+    private String buildVerifyUrl(String token) {
+        String base = publicBaseUrl;
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        String encoded = URLEncoder.encode(token, StandardCharsets.UTF_8);
+        return base + "/api/auth/verify-email?token=" + encoded;
+    }
+
+    /**
+     * プレーンテキストメール送信。
+     * sendgrid.apiKey が未設定の場合は、送信せずにログへ本文を出力します（開発用）。
      */
     public void sendPlainText(String to, String subject, String content) {
         if (sendgridApiKey == null || sendgridApiKey.isBlank()) {

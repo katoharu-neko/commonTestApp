@@ -59,7 +59,9 @@ public class SecurityConfig {
                     "/static/**",
                     "/assets/**",
                     // 直配信される可能性のある拡張子も一応許可
-                    "/*.js", "/*.css", "/*.map"
+                    "/*.js", "/*.css", "/*.map",
+                    
+                    "/verify-email"  // これを追加
                 ).permitAll()
 
                 // それ以外は認証必須
