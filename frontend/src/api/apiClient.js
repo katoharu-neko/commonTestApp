@@ -11,15 +11,17 @@ const API_BASE =
 
 const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: false, // JWTをHeaderで送る想定のまま
+  withCredentials: false, // JWTはAuthorizationヘッダで送る前提のまま
 });
 
 // リクエスト: Authorization 自動付与
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
-  if (token && !config.headers?.Authorization) {
+  if (token) {
     config.headers = config.headers ?? {};
-    config.headers.Authorization = `Bearer ${token}`;
+    if (!config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });

@@ -1,8 +1,6 @@
 package com.example.commonTestApp.service;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,57 +13,22 @@ import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class MailService {
 
     @Value("${sendgrid.apiKey:}")
     private String sendgridApiKey;
 
-    @Value("${app.mail.from:no-reply@example.com}")
+    @Value("${app.mail.from:noreply@example.com}")
     private String fromAddress;
 
-    /**
-     * 外向きの公開URL（Heroku では PUBLIC_BASE_URL で上書き）
-     * 例: https://<your-app>.herokuapp.com
-     */
-    @Value("${app.publicBaseUrl:http://localhost:8080}")
-    private String publicBaseUrl;
+    private final AppLinkBuilder linkBuilder;
 
-    /**
-     * ユーザーのメールアドレス確認用メールを送る。
-     * token を URL に埋め込み、バックエンドの検証APIへ誘導します。
-     */
-    public void sendVerificationEmail(String to, String token) {
-        final String verifyUrl = buildVerifyUrl(token);
-        final String subject = "メールアドレスの確認";
-        final String body =
-            "以下のリンクをクリックしてメール認証を完了してください。\n" +
-            verifyUrl + "\n\n" +
-            "このリンクには有効期限がある場合があります。お早めにお手続きください。";
-
-        sendPlainText(to, subject, body);
-    }
-
-    /**
-     * 検証用URLを生成（APIへ直リンク）
-     * 例: https://<app>/api/auth/verify-email?token=xxxx
-     */
-    private String buildVerifyUrl(String token) {
-        String base = publicBaseUrl;
-        if (base.endsWith("/")) {
-            base = base.substring(0, base.length() - 1);
-        }
-        String encoded = URLEncoder.encode(token, StandardCharsets.UTF_8);
-        return base + "/api/auth/verify-email?token=" + encoded;
-    }
-
-    /**
-     * プレーンテキストメール送信。
-     * sendgrid.apiKey が未設定の場合は、送信せずにログへ本文を出力します（開発用）。
-     */
     public void sendPlainText(String to, String subject, String content) {
         if (sendgridApiKey == null || sendgridApiKey.isBlank()) {
             log.warn("[DEV] sendgrid.apiKey 未設定。メールは送信せずログ出力のみ。");
@@ -93,5 +56,17 @@ public class MailService {
         } catch (IOException ex) {
             log.error("SendGrid exception", ex);
         }
+    }
+
+    /** B案：バックエンドの検証APIリンクを本文に入れて送信 */
+    public void sendEmailVerification(String to, String token) {
+        String verifyUrl = linkBuilder.buildEmailVerifyApiLink(token);
+        String subject = "メールアドレスの確認";
+        String body = """
+                以下のリンクをクリックしてメール認証を完了してください。
+                %s
+                """.formatted(verifyUrl);
+
+        sendPlainText(to, subject, body);
     }
 }

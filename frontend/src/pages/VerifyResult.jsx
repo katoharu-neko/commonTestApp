@@ -1,17 +1,29 @@
 // src/pages/VerifyResult.jsx
 import React from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useLocation, useSearchParams, Link } from 'react-router-dom';
 
 const messages = {
   success: { title: '認証が完了しました', body: 'ログインしてはじめましょう。' },
+  failed:  { title: '認証に失敗しました', body: 'リンクの有効期限切れ、または無効なトークンです。' },
   expired: { title: 'トークンの有効期限が切れています', body: '再送して再度お試しください。' },
   used:    { title: 'このトークンはすでに使用済みです', body: 'ログインできるかお試しください。' },
   invalid: { title: '無効なトークンです', body: 'メールのリンクを再度ご確認ください。' },
 };
 
 const VerifyResult = () => {
+  const location = useLocation();
   const [sp] = useSearchParams();
-  const status = sp.get('status') || 'invalid';
+
+  // 1) /verify-email/success | /verify-email/failed を優先
+  const path = location.pathname.toLowerCase();
+  let statusFromPath = null;
+  if (path.endsWith('/success')) statusFromPath = 'success';
+  else if (path.endsWith('/failed')) statusFromPath = 'failed';
+
+  // 2) 互換：/verify-result?status=... でもOK
+  const statusFromQuery = sp.get('status');
+
+  const status = statusFromPath || statusFromQuery || 'invalid';
   const m = messages[status] || messages.invalid;
 
   return (
@@ -20,7 +32,7 @@ const VerifyResult = () => {
       <p>{m.body}</p>
       <div style={{ display: 'flex', gap: 12 }}>
         <Link to="/login">ログインへ</Link>
-        <Link to="/verify-email">認証ページへ</Link>
+        <Link to="/">トップへ</Link>
       </div>
     </div>
   );

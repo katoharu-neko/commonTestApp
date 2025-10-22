@@ -17,7 +17,15 @@ export default function AppRoutes() {
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
+      {/* ローカル検証（JSON API版） */}
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      {/* B案：バックエンドの302リダイレクト先（本番） */}
+      <Route path="/verify-email/success" element={<VerifyResult />} />
+      <Route path="/verify-email/failed" element={<VerifyResult />} />
+
+      {/* 互換：旧の結果ページ（?status=） */}
       <Route path="/verify-result" element={<VerifyResult />} />
 
       {/* Protected */}

@@ -33,38 +33,17 @@ public class SecurityConfig {
             .csrf(c -> c.disable())
             .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                // 認証不要API（ログイン・登録など）
-                .requestMatchers("/api/auth/**").permitAll()
-
-                // Swagger / OpenAPI
                 .requestMatchers(
-                    "/swagger-ui.html",
-                    "/swagger-ui/**",
-                    "/v3/api-docs/**"
+                    "/api/auth/**",     // ← verify を含む
+                    "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                    "/error"
                 ).permitAll()
-
-                // エラーページ
-                .requestMatchers("/error").permitAll()
-
-                // SPAの静的ファイル（Reactビルド成果物）
                 .requestMatchers(
-                    "/",
-                    "/index.html",
-                    "/manifest.json",
-                    "/asset-manifest.json",
-                    "/favicon.ico",
-                    "/robots.txt",
-                    "/logo192.png",
-                    "/logo512.png",
-                    "/static/**",
-                    "/assets/**",
-                    // 直配信される可能性のある拡張子も一応許可
+                    "/", "/index.html",
+                    "/static/**", "/assets/**",
                     "/*.js", "/*.css", "/*.map",
-                    
-                    "/verify-email"  // これを追加
+                    "/favicon.ico", "/logo*","/manifest.json"
                 ).permitAll()
-
-                // それ以外は認証必須
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -77,14 +56,11 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // CORSはローカル開発向け（本番は同一オリジンなので実質適用されない）
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.frontendBaseUrl:http://localhost:3000}") String frontendBaseUrl) {
-
+        @Value("${app.frontendBaseUrl:http://localhost:3000}") String frontendBaseUrl
+    ) {
         CorsConfiguration config = new CorsConfiguration();
-
-        // ローカル(3000) & Heroku ドメイン & 任意指定を許可
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
             "https://*.herokuapp.com",
@@ -95,7 +71,6 @@ public class SecurityConfig {
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // API全体にCORS設定（必要に応じて "/api/**" に限定してもOK）
         source.registerCorsConfiguration("/**", config);
         return source;
     }
