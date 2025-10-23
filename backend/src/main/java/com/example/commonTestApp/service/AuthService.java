@@ -33,11 +33,9 @@ public class AuthService {
     private final VerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final MailService mailService; // ← MailServiceに委譲する
-    // private final AppLinkBuilder linkBuilder; // ← B案では不要なので削除
+    private final MailService mailService; // URL作成 & 送信を委譲
 
-    // 24時間
-    private static final long TOKEN_TTL_MILLIS = 24L * 60 * 60 * 1000;
+    private static final long TOKEN_TTL_MILLIS = 24L * 60 * 60 * 1000; // 24h
 
     @Transactional
     public TokenResponse login(LoginRequest req) {
@@ -83,25 +81,20 @@ public class AuthService {
         user.setRole(role);
         userRepository.save(user);
 
-        // トークン新規発行
+        // 認証トークン発行
         VerificationToken vt = new VerificationToken();
         vt.setToken(UUID.randomUUID().toString());
         vt.setUser(user);
         vt.setExpiresAt(new Date(System.currentTimeMillis() + TOKEN_TTL_MILLIS));
         tokenRepository.save(vt);
 
-        // ★B案：URLの作成はMailService側に委譲（APIリンク /api/auth/verify?token=...）
+        // 認証メール送信（本文に /api/auth/verify?token=... を埋め込む）
         mailService.sendEmailVerification(user.getEmail(), vt.getToken());
 
         log.info("register: userId={}, email={}", user.getId(), user.getEmail());
     }
 
-    /**
-     * 冪等なメール検証。
-     * - 無効/期限切れ → エラーコード返却（期限切れはトークン削除）
-     * - 未認証ユーザー → 有効化 & トークン削除
-     * - 既に認証済み → ALREADY_VERIFIED
-     */
+    /** 冪等なメール検証 */
     @Transactional
     public VerifyResponse verify(String token) {
         if (token == null || token.isBlank()) {
@@ -118,32 +111,29 @@ public class AuthService {
         Date now = new Date();
         Date exp = vt.getExpiresAt();
         if (exp != null && exp.before(now)) {
-            tokenRepository.delete(vt); // 期限切れを掃除
+            tokenRepository.delete(vt);
             return new VerifyResponse("TOKEN_EXPIRED", "トークンの有効期限が切れています。再度登録をお試しください。");
         }
 
         User user = vt.getUser();
         if (user == null) {
-            tokenRepository.delete(vt); // 孤児トークン掃除
+            tokenRepository.delete(vt);
             return new VerifyResponse("TOKEN_INVALID", "無効なトークンです。");
         }
 
         if (Boolean.TRUE.equals(user.getVerified())) {
-            tokenRepository.delete(vt); // 再利用防止で掃除
+            tokenRepository.delete(vt);
             return new VerifyResponse("ALREADY_VERIFIED", "すでに認証は完了しています");
         }
 
-        // 有効化
         user.setVerified(true);
         userRepository.save(user);
-
-        // 再利用防止：トークンを削除
         tokenRepository.delete(vt);
 
         return new VerifyResponse("VERIFIED", "メール認証が完了しました。ログインできます。");
     }
 
-    /** コントローラ互換のための別名。内部的には verify(...) に委譲。 */
+    /** コントローラ互換の別名 */
     @Transactional
     public VerifyResponse verifyEmail(String token) {
         return verify(token);

@@ -29,6 +29,7 @@ public class MailService {
 
     private final AppLinkBuilder linkBuilder;
 
+    /** 任意のプレーンテキスト送信（DEVはログへ出すだけ） */
     public void sendPlainText(String to, String subject, String content) {
         if (sendgridApiKey == null || sendgridApiKey.isBlank()) {
             log.warn("[DEV] sendgrid.apiKey 未設定。メールは送信せずログ出力のみ。");
@@ -58,7 +59,7 @@ public class MailService {
         }
     }
 
-    /** B案：バックエンドの検証APIリンクを本文に入れて送信 */
+    /** 方式B：バックエンド検証APIリンクを本文に入れて送信 */
     public void sendEmailVerification(String to, String token) {
         String verifyUrl = linkBuilder.buildEmailVerifyApiLink(token);
         String subject = "メールアドレスの確認";
