@@ -1,4 +1,3 @@
-// backend/src/main/java/com/example/commonTestApp/service/AppLinkBuilder.java
 package com.example.commonTestApp.service;
 
 import java.net.URLEncoder;
@@ -7,60 +6,68 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
- * メール内に記載する URL を一元生成するヘルパ。
+ * メール内のURL生成ヘルパ（方式B）。
  *
- * B案:
- * - メールに入れるリンクは「バックエンドの検証API」を指す
- *   例) https://<your-app>.herokuapp.com/api/auth/verify?token=...
- * - バックエンド側が検証後、結果に応じてフロントの
- *     /verify-email/success または /verify-email/failed へ 302 リダイレクトする
+ * 優先順位：
+ *   1) 環境変数 APP_PUBLIC_BASE_URL / APP_FRONTEND_BASE_URL / APP_BACKEND_BASE_URL
+ *   2) application.yml の app.publicBaseUrl / app.frontendBaseUrl / app.backendBaseUrl
+ *   3) デフォルト（localhost）
  *
- * PUBLIC_BASE_URL を必須ベースとして使い、足りない場合のみローカルの既定値にフォールバック。
+ * ※ Herokuでは APP_* を config vars に設定しておけば、確実に拾える。
  */
 @Component
+@Slf4j
 public class AppLinkBuilder {
 
-    private final String publicBaseUrl;   // 公開URL (Herokuの https://<app>.herokuapp.com を想定)
-    private final String frontendBaseUrl; // フロントのベース (例: http://localhost:3000)
-    private final String backendBaseUrl;  // バックのベース (例: http://localhost:8080) ※B案では基本未使用
+    private final String publicBaseUrl;   // 例: https://<app>.herokuapp.com
+    private final String frontendBaseUrl; // 例: https://<app>.herokuapp.com （本番同一オリジン）
+    private final String backendBaseUrl;  // 例: https://<app>.herokuapp.com （方式Bでは基本未使用）
 
     public AppLinkBuilder(
-        @Value("${app.publicBaseUrl:http://localhost:8080}") String publicBaseUrl,
-        @Value("${app.frontendBaseUrl:http://localhost:3000}") String frontendBaseUrl,
-        @Value("${app.backendBaseUrl:http://localhost:8080}") String backendBaseUrl
+        // 1) 環境変数（最優先）
+        @Value("${APP_PUBLIC_BASE_URL:}")  String envPublic,
+        @Value("${APP_FRONTEND_BASE_URL:}") String envFrontend,
+        @Value("${APP_BACKEND_BASE_URL:}")  String envBackend,
+        // 2) application.yml のプロパティ
+        @Value("${app.publicBaseUrl:}")    String propPublic,
+        @Value("${app.frontendBaseUrl:}")  String propFrontend,
+        @Value("${app.backendBaseUrl:}")   String propBackend
     ) {
-        this.publicBaseUrl = trimTailSlash(publicBaseUrl);
-        this.frontendBaseUrl = trimTailSlash(frontendBaseUrl);
-        this.backendBaseUrl = trimTailSlash(backendBaseUrl);
+        this.publicBaseUrl   = trimTailSlash(firstNonBlank(envPublic,   propPublic,   "http://localhost:8080"));
+        this.frontendBaseUrl = trimTailSlash(firstNonBlank(envFrontend, propFrontend, this.publicBaseUrl));
+        this.backendBaseUrl  = trimTailSlash(firstNonBlank(envBackend,  propBackend,  this.publicBaseUrl));
+
+        // 起動時に実際に使うURLをログ出ししてデバッグ容易に
+        log.info("[AppLinkBuilder] publicBaseUrl={}, frontendBaseUrl={}, backendBaseUrl={}",
+                this.publicBaseUrl, this.frontendBaseUrl, this.backendBaseUrl);
     }
 
-    private String trimTailSlash(String s) {
+    private static String firstNonBlank(String a, String b, String def) {
+        if (a != null && !a.isBlank()) return a;
+        if (b != null && !b.isBlank()) return b;
+        return def;
+    }
+
+    private static String trimTailSlash(String s) {
         if (s == null) return null;
         return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;
-    }
-
-    /**
-     * AuthService から呼ばれる公開メソッド。
-     * B案では「バックエンド検証API」を返す。
-     */
-    public String buildVerifyLink(String token) {
-        return buildEmailVerifyApiLink(token);
     }
 
     /** メール認証リンク（バックエンドの検証APIを叩くリンク） */
     public String buildEmailVerifyApiLink(String token) {
         String t = token == null ? "" : URLEncoder.encode(token, StandardCharsets.UTF_8);
-        // Heroku 本番では app.publicBaseUrl を https://<your-app>.herokuapp.com に設定しておくこと
         return publicBaseUrl + "/api/auth/verify?token=" + t;
     }
 
-    /** 検証成功時に遷移させるフロントのURL（バックエンドのリダイレクト先） */
+    /** 検証成功時（必要なら使用） */
     public String buildEmailVerifySuccessPage() {
         return frontendBaseUrl + "/verify-email/success";
     }
 
-    /** 検証失敗時に遷移させるフロントのURL（バックエンドのリダイレクト先） */
+    /** 検証失敗時（必要なら使用） */
     public String buildEmailVerifyFailedPage() {
         return frontendBaseUrl + "/verify-email/failed";
     }
