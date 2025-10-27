@@ -4,10 +4,18 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import userApi from '../../api/userApi';
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
 
 export default function Navbar() {
   const navigate = useNavigate();
   const isAuthed = !!localStorage.getItem('token');
+=======
+import { clearToken, getToken } from '../../auth';
+
+export default function Navbar() {
+  const navigate = useNavigate();
+  const isAuthed = !!getToken();
+>>>>>>> theirs
 =======
 import { clearToken, getToken } from '../../auth';
 

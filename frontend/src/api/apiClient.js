@@ -20,6 +20,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
 <<<<<<< ours
 <<<<<<< ours
+<<<<<<< ours
   const token = localStorage.getItem('token');
   if (token) {
 =======
@@ -32,10 +33,29 @@ api.interceptors.request.use((config) => {
 =======
   const headers = config.headers ?? {};
   const existingAuth = headers.Authorization ?? headers.authorization;
+=======
+  const headers = config.headers ?? {};
+  const readHeader = (name) => {
+    if (typeof headers.get === 'function') {
+      return headers.get(name);
+    }
+    return headers[name];
+  };
+  const writeHeader = (name, value) => {
+    if (typeof headers.set === 'function') {
+      headers.set(name, value);
+    } else {
+      headers[name] = value;
+    }
+  };
+
+  const existingAuth = readHeader('Authorization') ?? readHeader('authorization');
+>>>>>>> theirs
 
   if (!existingAuth) {
     const token = getToken();
     if (token) {
+<<<<<<< ours
       headers.Authorization = token.startsWith('Bearer ')
         ? token
         : `Bearer ${token}`;
@@ -47,6 +67,15 @@ api.interceptors.request.use((config) => {
     ...config,
     headers,
   };
+=======
+      const normalized = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      writeHeader('Authorization', normalized);
+    }
+  }
+
+  config.headers = headers;
+  return config;
+>>>>>>> theirs
 });
 
 // レスポンス: 401ならログインへ
