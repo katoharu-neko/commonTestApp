@@ -19,6 +19,7 @@ const api = axios.create({
 // リクエスト: Authorization 自動付与
 api.interceptors.request.use((config) => {
 <<<<<<< ours
+<<<<<<< ours
   const token = localStorage.getItem('token');
   if (token) {
 =======
@@ -28,9 +29,24 @@ api.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
     if (!config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
+=======
+  const headers = config.headers ?? {};
+  const existingAuth = headers.Authorization ?? headers.authorization;
+
+  if (!existingAuth) {
+    const token = getToken();
+    if (token) {
+      headers.Authorization = token.startsWith('Bearer ')
+        ? token
+        : `Bearer ${token}`;
+>>>>>>> theirs
     }
   }
-  return config;
+
+  return {
+    ...config,
+    headers,
+  };
 });
 
 // レスポンス: 401ならログインへ
