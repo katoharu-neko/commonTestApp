@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.example.commonTestApp.dto.UserProfileResponse;
 import com.example.commonTestApp.entity.User;
 import com.example.commonTestApp.repository.UserRepository;
 
@@ -24,5 +25,20 @@ public class UserService {
             throw new RuntimeException("メールアドレスは既に登録されています。");
         }
         return userRepository.save(user);
+    }
+
+    public UserProfileResponse getProfileByEmail(String email) {
+        User user = userRepository.findByEmailFetchRole(email)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        String roleName = user.getRole() != null ? user.getRole().getName() : null;
+
+        return new UserProfileResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                roleName,
+                user.getVerified()
+        );
     }
 }
