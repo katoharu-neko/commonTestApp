@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import api from '../api/apiClient';
+import { setToken as storeToken } from '../auth';
 
 export default function LoginPage() {
   const nav = useNavigate();
@@ -30,7 +31,7 @@ export default function LoginPage() {
         setError('サーバーからトークンが返りませんでした。レスポンス形式を確認してください。');
         return;
       }
-      localStorage.setItem('token', token);
+      storeToken(token);
       nav('/', { replace: true });
     } catch (err) {
       setError('ログインに失敗しました。メール・パスワードをご確認ください。');

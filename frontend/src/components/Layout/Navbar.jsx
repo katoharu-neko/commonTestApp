@@ -2,10 +2,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import userApi from '../../api/userApi';
+<<<<<<< ours
 
 export default function Navbar() {
   const navigate = useNavigate();
   const isAuthed = !!localStorage.getItem('token');
+=======
+import { clearToken, getToken } from '../../auth';
+
+export default function Navbar() {
+  const navigate = useNavigate();
+  const isAuthed = !!getToken();
+>>>>>>> theirs
   const [userName, setUserName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -53,7 +61,7 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    clearToken();
     navigate('/login', { replace: true });
   };
 
