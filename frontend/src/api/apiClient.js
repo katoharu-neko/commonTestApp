@@ -1,6 +1,8 @@
 // src/api/apiClient.js
 import axios from 'axios';
 
+import { clearToken, getToken } from '../auth';
+
 // 本番（NODE_ENV !== 'development'）は同一オリジンを使い、
 // ローカル開発だけ localhost:8080 を使う。
 // 明示的に REACT_APP_API_BASE_URL があればそれを優先。
@@ -16,8 +18,13 @@ const api = axios.create({
 
 // リクエスト: Authorization 自動付与
 api.interceptors.request.use((config) => {
+<<<<<<< ours
   const token = localStorage.getItem('token');
   if (token) {
+=======
+  const token = getToken();
+  if (token && !config.headers?.Authorization) {
+>>>>>>> theirs
     config.headers = config.headers ?? {};
     if (!config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -31,7 +38,7 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error?.response?.status === 401) {
-      localStorage.removeItem('token');
+      clearToken();
       if (window.location.pathname !== '/login') {
         window.location.replace('/login');
       }
