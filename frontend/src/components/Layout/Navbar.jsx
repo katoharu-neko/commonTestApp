@@ -2,97 +2,75 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import userApi from '../../api/userApi';
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-
-export default function Navbar() {
-  const navigate = useNavigate();
-  const isAuthed = !!localStorage.getItem('token');
-=======
 import { clearToken, getToken } from '../../auth';
 
-export default function Navbar() {
+function Navbar() {
   const navigate = useNavigate();
   const isAuthed = !!getToken();
->>>>>>> theirs
-=======
-import { clearToken, getToken } from '../../auth';
 
-export default function Navbar() {
-  const navigate = useNavigate();
-  const isAuthed = !!getToken();
->>>>>>> theirs
-=======
-import { clearToken, getToken } from '../../auth';
-
-export default function Navbar() {
-  const navigate = useNavigate();
-  const isAuthed = !!getToken();
->>>>>>> theirs
   const [userName, setUserName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  useEffect(() => {
+  // ユーザー名取得
+  useEffect(function () {
     if (!isAuthed) {
       setUserName('');
       return;
     }
 
-    let active = true;
+    var alive = true;
 
-    const loadUser = async () => {
+    (async function load() {
       try {
         const profile = await userApi.fetchCurrentUser();
-        if (active) {
-          setUserName(profile?.name || profile?.email || '');
+        if (alive) {
+          // optional chaining は使わない
+          const name = profile && (profile.name || profile.email) ? (profile.name || profile.email) : '';
+          setUserName(name);
         }
-      } catch (err) {
-        console.error('ユーザー情報の取得に失敗しました', err);
-        if (active) {
-          setUserName('');
-        }
+      } catch (e) {
+        console.error('ユーザー情報の取得に失敗しました', e);
+        if (alive) setUserName('');
       }
-    };
+    })();
 
-    loadUser();
-
-    return () => {
-      active = false;
-    };
+    return function cleanup() { alive = false; };
   }, [isAuthed]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+  // メニュー外クリックで閉じる
+  useEffect(function () {
+    function handleClickOutside(ev) {
+      if (menuRef.current && !menuRef.current.contains(ev.target)) {
         setMenuOpen(false);
       }
-    };
-
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
+    return function cleanup() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
-  const handleLogout = () => {
+  function handleLogout() {
     clearToken();
     navigate('/login', { replace: true });
-  };
+  }
 
-  const handleMenuNavigate = (path) => {
+  function handleMenuNavigate(path) {
     setMenuOpen(false);
     navigate(path);
-  };
+  }
 
-  const linkStyle = ({ isActive }) => ({
-    padding: '8px 12px',
-    textDecoration: 'none',
-    color: isActive ? '#111' : '#444',
-    fontWeight: isActive ? 700 : 400,
-    borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
-  });
+  function linkStyle(args) {
+    const isActive = args && args.isActive;
+    return {
+      padding: '8px 12px',
+      textDecoration: 'none',
+      color: isActive ? '#111' : '#444',
+      fontWeight: isActive ? 700 : 400,
+      borderBottom: isActive ? '2px solid #111' : '2px solid transparent',
+    };
+  }
 
   const menuButtonStyle = {
     display: 'block',
@@ -112,25 +90,28 @@ export default function Navbar() {
   };
 
   return (
-    <nav style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 12,
-      padding: '10px 16px',
-      borderBottom: '1px solid #e5e7eb',
-      background: '#fafafa'
-    }}>
+    <nav
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '10px 16px',
+        borderBottom: '1px solid #e5e7eb',
+        background: '#fafafa',
+      }}
+    >
       <div style={{ marginRight: 'auto', fontWeight: 700 }}>Common Test App</div>
 
       {isAuthed ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontWeight: 600, color: '#222' }}>
-            {userName ? `${userName} さん` : 'ユーザー'}
+            {userName ? userName + ' さん' : 'ユーザー'}
           </span>
+
           <div ref={menuRef} style={{ position: 'relative' }}>
             <button
               type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
+              onClick={function () { setMenuOpen(function (p) { return !p; }); }}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               style={{
@@ -145,6 +126,7 @@ export default function Navbar() {
             >
               ☰
             </button>
+
             {menuOpen && (
               <div
                 role="menu"
@@ -161,18 +143,14 @@ export default function Navbar() {
                   overflow: 'hidden',
                 }}
               >
-                <button
-                  type="button"
-                  style={menuButtonStyle}
-                  onClick={() => handleMenuNavigate('/')}
-                >
+                <button type="button" style={menuButtonStyle} onClick={function () { handleMenuNavigate('/'); }}>
                   ダッシュボード
                 </button>
                 <hr style={dividerStyle} />
                 <button
                   type="button"
                   style={menuButtonStyle}
-                  onClick={() => handleMenuNavigate('/scores/radar/year')}
+                  onClick={function () { handleMenuNavigate('/scores/radar/year'); }}
                 >
                   チャート表示入力画面
                 </button>
@@ -180,19 +158,15 @@ export default function Navbar() {
                 <button
                   type="button"
                   style={menuButtonStyle}
-                  onClick={() => handleMenuNavigate('/user')}
+                  onClick={function () { handleMenuNavigate('/user'); }}
                 >
                   ユーザー情報
                 </button>
                 <hr style={dividerStyle} />
                 <button
                   type="button"
-                  style={{
-                    ...menuButtonStyle,
-                    color: '#b91c1c',
-                    fontWeight: 600,
-                  }}
-                  onClick={() => {
+                  style={Object.assign({}, menuButtonStyle, { color: '#b91c1c', fontWeight: 600 })}
+                  onClick={function () {
                     setMenuOpen(false);
                     handleLogout();
                   }}
@@ -212,3 +186,5 @@ export default function Navbar() {
     </nav>
   );
 }
+
+export default Navbar;

@@ -1,10 +1,11 @@
 // src/api/apiClient.js
 import axios from 'axios';
 
+// auth ユーティリティ（存在しない場合は後述の簡易版を作成してください）
 import { clearToken, getToken } from '../auth';
 
 // 本番（NODE_ENV !== 'development'）は同一オリジンを使い、
-// ローカル開発だけ localhost:8080 を使う。
+// ローカル開発だけ http://localhost:8080 を使う。
 // 明示的に REACT_APP_API_BASE_URL があればそれを優先。
 const isDev = process.env.NODE_ENV === 'development';
 const API_BASE =
@@ -13,79 +14,43 @@ const API_BASE =
 
 const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: false, // JWTはAuthorizationヘッダで送る前提のまま
+  withCredentials: false, // JWT は Authorization ヘッダで送る前提
 });
 
-// リクエスト: Authorization 自動付与
+// リクエスト: Authorization を自動付与（既に指定されていれば触らない）
 api.interceptors.request.use((config) => {
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-  const token = localStorage.getItem('token');
-  if (token) {
-=======
-  const token = getToken();
-  if (token && !config.headers?.Authorization) {
->>>>>>> theirs
-    config.headers = config.headers ?? {};
-    if (!config.headers.Authorization) {
-      config.headers.Authorization = `Bearer ${token}`;
-=======
   const headers = config.headers ?? {};
-  const existingAuth = headers.Authorization ?? headers.authorization;
-=======
-  const headers = config.headers ?? {};
-  const readHeader = (name) => {
-    if (typeof headers.get === 'function') {
-      return headers.get(name);
-    }
-    return headers[name];
-  };
-  const writeHeader = (name, value) => {
-    if (typeof headers.set === 'function') {
-      headers.set(name, value);
-    } else {
-      headers[name] = value;
-    }
-  };
+  const alreadySet =
+    headers.Authorization ?? headers.authorization ?? (typeof headers.get === 'function' && (headers.get('Authorization') || headers.get('authorization')));
 
-  const existingAuth = readHeader('Authorization') ?? readHeader('authorization');
->>>>>>> theirs
-
-  if (!existingAuth) {
-    const token = getToken();
-    if (token) {
-<<<<<<< ours
-      headers.Authorization = token.startsWith('Bearer ')
-        ? token
-        : `Bearer ${token}`;
->>>>>>> theirs
-    }
-  }
-
-  return {
-    ...config,
-    headers,
-  };
-=======
-      const normalized = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-      writeHeader('Authorization', normalized);
+  if (!alreadySet) {
+    const raw = (typeof getToken === 'function' ? getToken() : localStorage.getItem('token')) || '';
+    if (raw) {
+      const normalized = raw.startsWith('Bearer ') ? raw : `Bearer ${raw}`;
+      if (typeof headers.set === 'function') {
+        headers.set('Authorization', normalized);
+      } else {
+        headers.Authorization = normalized;
+      }
     }
   }
 
   config.headers = headers;
   return config;
->>>>>>> theirs
 });
 
-// レスポンス: 401ならログインへ
+// レスポンス: 401 ならトークンを消して /login へ
 api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error?.response?.status === 401) {
-      clearToken();
-      if (window.location.pathname !== '/login') {
-        window.location.replace('/login');
+      try {
+        if (typeof clearToken === 'function') clearToken();
+        else localStorage.removeItem('token');
+      } finally {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.replace('/login');
+        }
       }
     }
     return Promise.reject(error);

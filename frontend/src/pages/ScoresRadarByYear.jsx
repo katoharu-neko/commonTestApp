@@ -160,7 +160,7 @@ const ScoresRadarByYear = () => {
   }, [scores, viewYear, subjects]);
 
   const chartOption = {
-    title: { text: `年度別レーダーチャート（％表示） ${viewYear || '-'}` },
+    title: { text: `年度別 ${viewYear || '-'}` },
     tooltip: {},
     radar: {
       indicator,
@@ -181,6 +181,24 @@ const ScoresRadarByYear = () => {
       {/* 初期ローディング・エラー */}
       {loadingInit && <p>読み込み中...</p>}
       {initError && <p style={{ color: 'crimson' }}>{initError}</p>}
+
+      {/* 年度セレクト + レーダーチャート（％） */}
+      <section>
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* <h3 style={{ margin: 0 }}>レーダーチャート（年度・％）</h3> */}
+          <select value={viewYear} onChange={e => setViewYear(e.target.value)} style={{ padding: 6 }}>
+            {years.length ? years.map(y => <option key={y} value={y}>{y}</option>) : (
+              <option value={viewYear}>{viewYear}</option>
+            )}
+          </select>
+        </div>
+
+        {indicator.length ? (
+          <ReactECharts option={chartOption} style={{ height: 520 }} notMerge />
+        ) : (
+          <p>表示できるデータがありません。</p>
+        )}
+      </section>
 
       {/* 入力フォーム */}
       <section style={{ marginBottom: 24, border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
@@ -253,23 +271,7 @@ const ScoresRadarByYear = () => {
         </form>
       </section>
 
-      {/* 年度セレクト + レーダーチャート（％） */}
-      <section>
-        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h3 style={{ margin: 0 }}>レーダーチャート（年度・％）</h3>
-          <select value={viewYear} onChange={e => setViewYear(e.target.value)} style={{ padding: 6 }}>
-            {years.length ? years.map(y => <option key={y} value={y}>{y}</option>) : (
-              <option value={viewYear}>{viewYear}</option>
-            )}
-          </select>
-        </div>
 
-        {indicator.length ? (
-          <ReactECharts option={chartOption} style={{ height: 520 }} notMerge />
-        ) : (
-          <p>表示できるデータがありません。</p>
-        )}
-      </section>
     </div>
   );
 };
