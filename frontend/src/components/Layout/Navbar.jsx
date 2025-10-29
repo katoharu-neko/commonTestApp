@@ -173,7 +173,7 @@ function Navbar() {
           alt="Test Adviser ロゴ"
           style={{ width: 42, height: 42, display: 'block' }}
         />
-        <span style={{ fontSize: 18 }}>Common Test Adviser</span>
+        <span style={{ fontSize: 18 }}>Test Adviser</span>
       </NavLink>
 
       {isAuthed ? (

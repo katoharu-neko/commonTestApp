@@ -1,57 +1,12 @@
-<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="logoGradient" x1="96" y1="12" x2="96" y2="180" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#5AC8FA" />
-      <stop offset="1" stop-color="#147CDF" />
-    </linearGradient>
-    <linearGradient id="logoInner" x1="96" y1="32" x2="96" y2="160" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#C9EEFF" stop-opacity="0.95" />
-      <stop offset="1" stop-color="#77BFF4" stop-opacity="0.95" />
-    </linearGradient>
-  </defs>
-  <path
-    d="M96 12L18 72.5L47 168H145L174 72.5L96 12Z"
-    fill="url(#logoGradient)"
-  />
-  <path
-    d="M96 34L41.4 77.4L64.8 155H127.2L150.6 77.4L96 34Z"
-    fill="url(#logoInner)"
-  />
-  <path
-    d="M96 48L56.5 80.4L71.8 136H120.2L135.5 80.4L96 48Z"
-    stroke="#1D4ED8"
-    stroke-width="6"
-    stroke-linejoin="round"
-    fill="none"
-  />
-  <path
-    d="M96 48V136"
-    stroke="#1D4ED8"
-    stroke-width="5"
-    stroke-linecap="round"
-  />
-  <path
-    d="M56.5 80.4L135.5 80.4"
-    stroke="#1D4ED8"
-    stroke-width="5"
-    stroke-linecap="round"
-  />
-  <path
-    d="M66.5 112H125.5"
-    stroke="#1D4ED8"
-    stroke-width="5"
-    stroke-linecap="round"
-  />
-  <path
-    d="M80 63L112 127"
-    stroke="#1D4ED8"
-    stroke-width="4.5"
-    stroke-linecap="round"
-  />
-  <path
-    d="M112 63L80 127"
-    stroke="#1D4ED8"
-    stroke-width="4.5"
-    stroke-linecap="round"
-  />
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<polygon points="512.00,152.00 854.38,400.75 723.60,803.25 300.40,803.25 169.62,400.75" fill="#6EC6FF" stroke="#1E88E5" stroke-width="20" stroke-linejoin="round"/>
+<polygon points="512.00,224.00 785.90,423.00 681.28,745.00 342.72,745.00 238.10,423.00" fill="none" stroke="#1E88E5" stroke-width="12" stroke-linejoin="round"/>
+<polygon points="512.00,296.00 717.43,445.25 638.96,686.75 385.04,686.75 306.57,445.25" fill="none" stroke="#1E88E5" stroke-width="12" stroke-linejoin="round"/>
+<polygon points="512.00,368.00 648.95,467.50 596.64,628.50 427.36,628.50 375.05,467.50" fill="none" stroke="#1E88E5" stroke-width="12" stroke-linejoin="round"/>
+<polygon points="512.00,440.00 580.48,489.75 554.32,570.25 469.68,570.25 443.52,489.75" fill="none" stroke="#1E88E5" stroke-width="12" stroke-linejoin="round"/>
+<line x1="512.00" y1="512.00" x2="512.00" y2="152.00" stroke="#1E88E5" stroke-width="12" />
+<line x1="512.00" y1="512.00" x2="854.38" y2="400.75" stroke="#1E88E5" stroke-width="12" />
+<line x1="512.00" y1="512.00" x2="723.60" y2="803.25" stroke="#1E88E5" stroke-width="12" />
+<line x1="512.00" y1="512.00" x2="300.40" y2="803.25" stroke="#1E88E5" stroke-width="12" />
+<line x1="512.00" y1="512.00" x2="169.62" y2="400.75" stroke="#1E88E5" stroke-width="12" />
 </svg>
