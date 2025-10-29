@@ -39,7 +39,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// レスポンス: 401 ならトークンを消して /login へ
+// レスポンス: 401 ならトークンを消してアプリ側に通知
 api.interceptors.response.use(
   (res) => res,
   (error) => {
@@ -48,8 +48,9 @@ api.interceptors.response.use(
         if (typeof clearToken === 'function') clearToken();
         else localStorage.removeItem('token');
       } finally {
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.replace('/login');
+        if (typeof window !== 'undefined') {
+          const event = new CustomEvent('app:unauthorized');
+          window.dispatchEvent(event);
         }
       }
     }
