@@ -1,8 +1,14 @@
 // src/components/Layout/Navbar.jsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import userApi from '../../api/userApi';
 import { clearToken, getToken } from '../../auth';
+
+import logoSvg from '../../assets/images/logo.svg';
+import dashboardIcon from '../../assets/images/menu/dashboard.svg';
+import chartIcon from '../../assets/images/menu/chart.svg';
+import userIcon from '../../assets/images/menu/user.svg';
+import logoutIcon from '../../assets/images/menu/logout.svg';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -37,6 +43,19 @@ function Navbar() {
 
     return function cleanup() { alive = false; };
   }, [isAuthed]);
+
+  // 認証切れ時にログインへ戻す
+  useEffect(function () {
+    function handleUnauthorized() {
+      setMenuOpen(false);
+      navigate('/login', { replace: true });
+    }
+
+    window.addEventListener('app:unauthorized', handleUnauthorized);
+    return function cleanup() {
+      window.removeEventListener('app:unauthorized', handleUnauthorized);
+    };
+  }, [navigate]);
 
   // メニュー外クリックで閉じる
   useEffect(function () {
@@ -73,7 +92,9 @@ function Navbar() {
   }
 
   const menuButtonStyle = {
-    display: 'block',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
     width: '100%',
     textAlign: 'left',
     padding: '10px 14px',
@@ -89,6 +110,38 @@ function Navbar() {
     borderTop: '1px solid #e5e7eb',
   };
 
+  const menuItems = useMemo(
+    function () {
+      return [
+        {
+          key: 'dashboard',
+          label: 'ダッシュボード',
+          icon: dashboardIcon,
+          onClick: function () {
+            handleMenuNavigate('/');
+          },
+        },
+        {
+          key: 'chart',
+          label: 'チャート表示入力画面',
+          icon: chartIcon,
+          onClick: function () {
+            handleMenuNavigate('/scores/radar/year');
+          },
+        },
+        {
+          key: 'profile',
+          label: 'ユーザー情報',
+          icon: userIcon,
+          onClick: function () {
+            handleMenuNavigate('/user');
+          },
+        },
+      ];
+    },
+    []
+  );
+
   return (
     <nav
       style={{
@@ -100,7 +153,28 @@ function Navbar() {
         background: '#fafafa',
       }}
     >
-      <div style={{ marginRight: 'auto', fontWeight: 700 }}>Common Test App</div>
+      <NavLink
+        to="/"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginRight: 'auto',
+          textDecoration: 'none',
+          color: '#1f2937',
+          fontWeight: 700,
+        }}
+        onClick={function () {
+          setMenuOpen(false);
+        }}
+      >
+        <img
+          src={logoSvg}
+          alt="Test Adviser ロゴ"
+          style={{ width: 42, height: 42, display: 'block' }}
+        />
+        <span style={{ fontSize: 18 }}>Common Test Adviser</span>
+      </NavLink>
 
       {isAuthed ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -134,34 +208,26 @@ function Navbar() {
                   position: 'absolute',
                   right: 0,
                   top: 'calc(100% + 8px)',
-                  width: 220,
+                  width: 240,
                   border: '1px solid #e5e7eb',
-                  borderRadius: 8,
+                  borderRadius: 12,
                   background: '#fff',
                   boxShadow: '0 12px 28px rgba(0,0,0,0.12)',
                   zIndex: 10,
                   overflow: 'hidden',
                 }}
               >
-                <button type="button" style={menuButtonStyle} onClick={function () { handleMenuNavigate('/'); }}>
-                  ダッシュボード
-                </button>
-                <hr style={dividerStyle} />
-                <button
-                  type="button"
-                  style={menuButtonStyle}
-                  onClick={function () { handleMenuNavigate('/scores/radar/year'); }}
-                >
-                  チャート表示入力画面
-                </button>
-                <hr style={dividerStyle} />
-                <button
-                  type="button"
-                  style={menuButtonStyle}
-                  onClick={function () { handleMenuNavigate('/user'); }}
-                >
-                  ユーザー情報
-                </button>
+                {menuItems.map(function (item, index) {
+                  return (
+                    <React.Fragment key={item.key}>
+                      <button type="button" style={menuButtonStyle} onClick={item.onClick}>
+                        <img src={item.icon} alt="" aria-hidden="true" style={{ width: 20, height: 20 }} />
+                        <span>{item.label}</span>
+                      </button>
+                      {index < menuItems.length - 1 && <hr style={dividerStyle} />}
+                    </React.Fragment>
+                  );
+                })}
                 <hr style={dividerStyle} />
                 <button
                   type="button"
@@ -171,7 +237,8 @@ function Navbar() {
                     handleLogout();
                   }}
                 >
-                  ログアウト
+                  <img src={logoutIcon} alt="" aria-hidden="true" style={{ width: 20, height: 20 }} />
+                  <span>ログアウト</span>
                 </button>
               </div>
             )}
