@@ -159,25 +159,47 @@ const ScoresRadarByYear = () => {
     return { indicator, data: percentValues };
   }, [scores, viewYear, subjects]);
 
-  const chartOption = {
-    title: { text: `年度別 ${viewYear || '-'}` },
-    tooltip: {},
-    radar: {
-      indicator,
-      axisName: { color: '#111' }
-    },
-    series: [{
+  const stroke = '#3BAFDA';
+  const fill   = 'rgba(59,175,218,0.18)';
+
+
+const chartOption = {
+  title: { text: `年度別 ${viewYear || '-'}` },
+  tooltip: {},
+  radar: {
+    indicator,
+    axisName: { color: '#111' }
+  },
+  series: [
+    {
       type: 'radar',
-      data: [{ value: data, name: '得点率(%)' }],
-      areaStyle: {}
-    }]
-  };
+      data: [
+        {
+          value: data,
+          name: '得点率(%)',
+          // 線・マーカー色
+          lineStyle: { width: 2, color: stroke },
+          itemStyle: { color: stroke, borderColor: stroke },
+          // 面の色（半透明）
+          areaStyle: { color: fill },
+          // マウスオーバー時の色（任意）
+          emphasis: {
+            lineStyle: { color: stroke },
+            itemStyle: { color: stroke },
+            areaStyle: { color: 'rgba(59,175,218,0.28)' }
+          }
+        }
+      ],
+      // シンボル（頂点）のスタイル（任意）
+      symbol: 'circle',
+      symbolSize: 5
+    }
+  ]
+};
 
   // ---- UI ----
   return (
     <div style={{ padding: 24 }}>
-      <h2 style={{ marginTop: 0 }}>スコア管理／レーダーチャート</h2>
-
       {/* 初期ローディング・エラー */}
       {loadingInit && <p>読み込み中...</p>}
       {initError && <p style={{ color: 'crimson' }}>{initError}</p>}
