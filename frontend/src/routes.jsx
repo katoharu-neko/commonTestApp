@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ScoresRadarByYear from './pages/ScoresRadarByYear';
+import UserProfile from './pages/UserProfile';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyResult from './pages/VerifyResult';
 
@@ -42,6 +43,14 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <ScoresRadarByYear />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/user"
+        element={
+          <ProtectedRoute>
+            <UserProfile />
           </ProtectedRoute>
         }
       />
