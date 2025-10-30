@@ -205,8 +205,15 @@ const ScoresRadarByYear = () => {
       {initError && <p className="scores-page__alert form-error">{initError}</p>}
 
       <section className="card scores-page__chart">
+        <div className="scores-chart-wrapper">
+          {indicator.length ? (
+            <ReactECharts option={chartOption} style={chartStyle} notMerge />
+          ) : (
+            <p className="status-message">表示できるデータがありません。</p>
+          )}
+        </div>
+        
         <div className="scores-year-selector">
-          <h3 className="section-title" style={{ marginBottom: 0 }}>レーダーチャート</h3>
           <select value={viewYear} onChange={e => setViewYear(e.target.value)}>
             {years.length ? (
               years.map(function (y) {
@@ -219,14 +226,7 @@ const ScoresRadarByYear = () => {
             )}
           </select>
         </div>
-
-        <div className="scores-chart-wrapper">
-          {indicator.length ? (
-            <ReactECharts option={chartOption} style={chartStyle} notMerge />
-          ) : (
-            <p className="status-message">表示できるデータがありません。</p>
-          )}
-        </div>
+        
       </section>
 
       <section className="card scores-page__form">
