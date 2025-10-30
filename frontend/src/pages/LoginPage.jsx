@@ -41,38 +41,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ maxWidth: 380, margin: '40px auto' }}>
-      <h2>ログイン</h2>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-        <label style={{ display: 'grid', gap: 6 }}>
-          メールアドレス
+    <div className="card form-card form-card--narrow">
+      <h2 className="form-card__title">ログイン</h2>
+      <form onSubmit={onSubmit} className="form-stack">
+        <label className="form-field">
+          <span>メールアドレス</span>
           <input
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             autoComplete="username"
             placeholder="you@example.com"
-            style={{ padding: 10 }}
           />
         </label>
-        <label style={{ display: 'grid', gap: 6 }}>
-          パスワード
+        <label className="form-field">
+          <span>パスワード</span>
           <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoComplete="current-password"
             placeholder="••••••••"
-            style={{ padding: 10 }}
           />
         </label>
-        <button type="submit" disabled={submitting} style={{ padding: '10px 12px' }}>
+        <button type="submit" disabled={submitting} className="button-primary">
           {submitting ? '送信中…' : 'ログイン'}
         </button>
 
-        {error && <div style={{ color: 'crimson' }}>{error}</div>}
+        {error && <div className="form-error">{error}</div>}
 
-        <div>
+        <div className="form-footnote">
           アカウントがない方は <NavLink to="/register">新規登録</NavLink>
         </div>
       </form>

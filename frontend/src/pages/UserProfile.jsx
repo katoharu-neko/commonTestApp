@@ -37,32 +37,42 @@ export default function UserProfile() {
   }, []);
 
   if (loading) {
-    return <div>読み込み中…</div>;
+    return (
+      <div className="card placeholder-card">
+        <p>読み込み中…</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={{ color: 'crimson' }}>{error}</div>;
+    return (
+      <div className="card placeholder-card">
+        <p className="form-error" style={{ margin: 0 }}>{error}</p>
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div>ユーザー情報が見つかりません。</div>;
+    return (
+      <div className="card placeholder-card">
+        <p>ユーザー情報が見つかりません。</p>
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', display: 'grid', gap: 16 }}>
-      <h2>ユーザー情報</h2>
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, background: '#fff' }}>
-        <dl style={{ display: 'grid', gridTemplateColumns: '120px 1fr', rowGap: 12, columnGap: 16, margin: 0 }}>
-          <dt style={{ fontWeight: 600 }}>ユーザー名</dt>
-          <dd style={{ margin: 0 }}>{profile.name || '未設定'}</dd>
-          <dt style={{ fontWeight: 600 }}>メールアドレス</dt>
-          <dd style={{ margin: 0 }}>{profile.email}</dd>
-          <dt style={{ fontWeight: 600 }}>ロール</dt>
-          <dd style={{ margin: 0 }}>{profile.role || '未設定'}</dd>
-          <dt style={{ fontWeight: 600 }}>メール認証</dt>
-          <dd style={{ margin: 0 }}>{profile.verified ? '完了' : '未完了'}</dd>
-        </dl>
-      </div>
+    <div className="card profile-card">
+      <h2 className="section-title">ユーザー情報</h2>
+      <dl className="profile-card__list">
+        <dt>ユーザー名</dt>
+        <dd>{profile.name || '未設定'}</dd>
+        <dt>メールアドレス</dt>
+        <dd>{profile.email}</dd>
+        <dt>ロール</dt>
+        <dd>{profile.role || '未設定'}</dd>
+        <dt>メール認証</dt>
+        <dd>{profile.verified ? '完了' : '未完了'}</dd>
+      </dl>
     </div>
   );
 }

@@ -162,100 +162,103 @@ const ScoresRadarByYear = () => {
   const stroke = '#3BAFDA';
   const fill   = 'rgba(59,175,218,0.18)';
 
-
-const chartOption = {
-  title: { text: `年度別 ${viewYear || '-'}` },
-  tooltip: {},
-  radar: {
-    indicator,
-    axisName: { color: '#111' }
-  },
-  series: [
-    {
-      type: 'radar',
-      data: [
-        {
-          value: data,
-          name: '得点率(%)',
-          // 線・マーカー色
-          lineStyle: { width: 2, color: stroke },
-          itemStyle: { color: stroke, borderColor: stroke },
-          // 面の色（半透明）
-          areaStyle: { color: fill },
-          // マウスオーバー時の色（任意）
-          emphasis: {
-            lineStyle: { color: stroke },
-            itemStyle: { color: stroke },
-            areaStyle: { color: 'rgba(59,175,218,0.28)' }
+  const chartOption = {
+    title: { text: `年度別 ${viewYear || '-'}` },
+    tooltip: {},
+    radar: {
+      indicator,
+      axisName: { color: '#111' }
+    },
+    series: [
+      {
+        type: 'radar',
+        data: [
+          {
+            value: data,
+            name: '得点率(%)',
+            // 線・マーカー色
+            lineStyle: { width: 2, color: stroke },
+            itemStyle: { color: stroke, borderColor: stroke },
+            // 面の色（半透明）
+            areaStyle: { color: fill },
+            // マウスオーバー時の色（任意）
+            emphasis: {
+              lineStyle: { color: stroke },
+              itemStyle: { color: stroke },
+              areaStyle: { color: 'rgba(59,175,218,0.28)' }
+            }
           }
-        }
-      ],
-      // シンボル（頂点）のスタイル（任意）
-      symbol: 'circle',
-      symbolSize: 5
-    }
-  ]
-};
+        ],
+        // シンボル（頂点）のスタイル（任意）
+        symbol: 'circle',
+        symbolSize: 5
+      }
+    ]
+  };
+
+  const chartStyle = { height: 'clamp(320px, 60vh, 520px)', width: '100%' };
 
   // ---- UI ----
   return (
-    <div style={{ padding: 24 }}>
-      {/* 初期ローディング・エラー */}
-      {loadingInit && <p>読み込み中...</p>}
-      {initError && <p style={{ color: 'crimson' }}>{initError}</p>}
+    <div className="scores-page">
+      {loadingInit && <p className="scores-page__alert">読み込み中...</p>}
+      {initError && <p className="scores-page__alert form-error">{initError}</p>}
 
-      {/* 年度セレクト + レーダーチャート（％） */}
-      <section>
-        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* <h3 style={{ margin: 0 }}>レーダーチャート（年度・％）</h3> */}
-          <select value={viewYear} onChange={e => setViewYear(e.target.value)} style={{ padding: 6 }}>
-            {years.length ? years.map(y => <option key={y} value={y}>{y}</option>) : (
+      <section className="card scores-page__chart">
+        <div className="scores-year-selector">
+          <h3 className="section-title" style={{ marginBottom: 0 }}>レーダーチャート</h3>
+          <select value={viewYear} onChange={e => setViewYear(e.target.value)}>
+            {years.length ? (
+              years.map(function (y) {
+                return (
+                  <option key={y} value={y}>{y}</option>
+                );
+              })
+            ) : (
               <option value={viewYear}>{viewYear}</option>
             )}
           </select>
         </div>
 
-        {indicator.length ? (
-          <ReactECharts option={chartOption} style={{ height: 520 }} notMerge />
-        ) : (
-          <p>表示できるデータがありません。</p>
-        )}
+        <div className="scores-chart-wrapper">
+          {indicator.length ? (
+            <ReactECharts option={chartOption} style={chartStyle} notMerge />
+          ) : (
+            <p className="status-message">表示できるデータがありません。</p>
+          )}
+        </div>
       </section>
 
-      {/* 入力フォーム */}
-      <section style={{ marginBottom: 24, border: '1px solid #e5e7eb', borderRadius: 8, padding: 16 }}>
-        <h3 style={{ marginTop: 0 }}>スコア入力</h3>
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr', alignItems: 'end' }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            年度
+      <section className="card scores-page__form">
+        <h3 className="section-title">スコア入力</h3>
+        <form onSubmit={handleSubmit} className="scores-form-grid">
+          <label className="form-field">
+            <span>年度</span>
             <input
               type="number"
               value={year}
               onChange={e => setYear(e.target.value)}
               placeholder={new Date().getFullYear()}
-              style={{ padding: 8 }}
             />
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            カテゴリ
+          <label className="form-field">
+            <span>カテゴリ</span>
             <select
               value={category}
               onChange={e => { setCategory(e.target.value); setSubjectName(''); }}
-              style={{ padding: 8 }}
             >
               <option value="">選択してください</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            科目
+          <label className="form-field">
+            <span>科目</span>
             <select
               value={subjectName}
               onChange={e => setSubjectName(e.target.value)}
               disabled={!category}
-              style={{ padding: 8 }}
             >
               <option value="">選択してください</option>
               {filteredSubjects.map(s => (
@@ -266,8 +269,8 @@ const chartOption = {
             </select>
           </label>
 
-          <label style={{ display: 'grid', gap: 6 }}>
-            得点
+          <label className="form-field">
+            <span>得点</span>
             <input
               type="number"
               value={score}
@@ -276,24 +279,21 @@ const chartOption = {
               max={selectedFullScore}
               placeholder={`0〜${selectedFullScore}`}
               disabled={!subjectName}
-              style={{ padding: 8 }}
             />
           </label>
 
-          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div className="scores-form-actions" style={{ gridColumn: '1 / -1' }}>
             <button
               type="submit"
               disabled={submitting}
-              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #d1d5db' }}
+              className="button-primary"
             >
               {submitting ? '送信中…' : '登録する'}
             </button>
-            {formError && <span style={{ color: 'crimson' }}>{formError}</span>}
+            {formError && <span className="form-error">{formError}</span>}
           </div>
         </form>
       </section>
-
-
     </div>
   );
 };
