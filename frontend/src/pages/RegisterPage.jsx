@@ -36,11 +36,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div style={{ maxWidth: 520, margin: '40px auto' }}>
-      <h2>新規登録</h2>
-      <form onSubmit={onSubmit} autoComplete="on">
-        <div style={{ marginBottom: 12 }}>
-          <label>お名前</label>
+    <div className="card form-card">
+      <h2 className="form-card__title">新規登録</h2>
+      <form onSubmit={onSubmit} autoComplete="on" className="form-stack">
+        <label className="form-field">
+          <span>お名前</span>
           <input
             type="text"
             name="name"
@@ -49,10 +49,10 @@ export default function RegisterPage() {
             placeholder="山田 太郎"
             required
           />
-        </div>
+        </label>
 
-        <div style={{ marginBottom: 12 }}>
-          <label>メールアドレス</label>
+        <label className="form-field">
+          <span>メールアドレス</span>
           <input
             type="email"
             name="email"
@@ -62,10 +62,10 @@ export default function RegisterPage() {
             autoComplete="email"
             required
           />
-        </div>
+        </label>
 
-        <div style={{ marginBottom: 12 }}>
-          <label>パスワード</label>
+        <label className="form-field">
+          <span>パスワード</span>
           <input
             type="password"
             name="password"
@@ -75,25 +75,25 @@ export default function RegisterPage() {
             autoComplete="new-password"
             required
           />
-        </div>
+        </label>
 
-        <div style={{ marginBottom: 12 }}>
-          <label>ユーザー区分</label>
+        <label className="form-field">
+          <span>ユーザー区分</span>
           <select name="roleId" value={form.roleId} onChange={onChange}>
             <option value={2}>一般ユーザー</option>
             <option value={3}>教職ユーザー</option>
           </select>
-        </div>
+        </label>
 
-        {err && <div style={{ color: 'crimson', marginBottom: 12 }}>{err}</div>}
-        {msg && <div style={{ color: 'green', marginBottom: 12 }}>{msg}</div>}
+        {err && <div className="form-error">{err}</div>}
+        {msg && <div className="form-success">{msg}</div>}
 
-        <button type="submit" disabled={loading}>
+        <button type="submit" disabled={loading} className="button-primary">
           {loading ? '送信中…' : '登録する'}
         </button>
       </form>
 
-      <div style={{ marginTop: 16 }}>
+      <div className="form-footnote">
         すでにアカウントをお持ちの方は <Link to="/login">ログイン</Link>
       </div>
     </div>

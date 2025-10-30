@@ -4,11 +4,11 @@ import Navbar from './Navbar';
 
 export default function AppLayout({ children }) {
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div className="app-shell">
       <header>
         <Navbar />
       </header>
-      <main style={{ flex: 1, padding: 16 }}>
+      <main className="app-shell__main">
         {children}
       </main>
     </div>

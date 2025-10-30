@@ -27,10 +27,10 @@ const VerifyResult = () => {
   const m = messages[status] || messages.invalid;
 
   return (
-    <div style={{ maxWidth: 520, margin: '40px auto', padding: 24, border: '1px solid #e5e7eb', borderRadius: 12 }}>
-      <h2>{m.title}</h2>
-      <p>{m.body}</p>
-      <div style={{ display: 'flex', gap: 12 }}>
+    <div className="card form-card">
+      <h2 className="form-card__title">{m.title}</h2>
+      <p className="status-message">{m.body}</p>
+      <div className="scores-form-actions" style={{ justifyContent: 'flex-start' }}>
         <Link to="/login">ログインへ</Link>
         <Link to="/">トップへ</Link>
       </div>

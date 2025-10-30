@@ -29,20 +29,20 @@ export default function VerifyEmailPage() {
   }, [searchParams]);
 
   return (
-    <div style={{ maxWidth: 520, margin: '40px auto' }}>
-      <h2>メール認証</h2>
-      {status === 'loading' && <p>確認中です…</p>}
+    <div className="card form-card">
+      <h2 className="form-card__title">メール認証</h2>
+      {status === 'loading' && <p className="status-message">確認中です…</p>}
       {status === 'ok' && (
-        <>
-          <p style={{ color: 'green' }}>{message}</p>
+        <div className="status-message status-message--ok">
+          <p>{message}</p>
           <p><Link to="/login">ログインへ</Link></p>
-        </>
+        </div>
       )}
       {status === 'error' && (
-        <>
-          <p style={{ color: 'crimson' }}>{message}</p>
+        <div className="status-message status-message--error">
+          <p>{message}</p>
           <p><Link to="/">トップへ戻る</Link></p>
-        </>
+        </div>
       )}
     </div>
   );
