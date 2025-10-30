@@ -77,8 +77,6 @@ textarea {
 .dashboard-grid {
   display: grid;
   gap: 28px;
-<<<<<<< ours
-=======
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   align-items: stretch;
 }
@@ -95,7 +93,6 @@ textarea {
     grid-template-columns: 1fr;
     gap: 20px;
   }
->>>>>>> theirs
 }
 
 .dashboard-card {
@@ -104,8 +101,6 @@ textarea {
   gap: 20px;
 }
 
-<<<<<<< ours
-=======
 .recent-scores-card {
   gap: 18px;
 }
@@ -162,7 +157,6 @@ textarea {
   }
 }
 
->>>>>>> theirs
 .dashboard-card__header {
   display: flex;
   flex-wrap: wrap;
