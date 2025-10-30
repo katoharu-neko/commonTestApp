@@ -1,11 +1,11 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
+import RecentScoresRadar from '../components/dashboard/RecentScoresRadar';
 
 export default function Dashboard() {
   return (
-    <div className="card dashboard-card">
-      <h2 className="section-title">ダッシュボード</h2>
-      <p>ログイン済みです。</p>
+    <div className="dashboard-grid">
+      <RecentScoresRadar />
     </div>
   );
 }
