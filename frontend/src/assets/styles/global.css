@@ -77,6 +77,25 @@ textarea {
 .dashboard-grid {
   display: grid;
   gap: 28px;
+<<<<<<< ours
+=======
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: stretch;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+>>>>>>> theirs
 }
 
 .dashboard-card {
@@ -85,6 +104,65 @@ textarea {
   gap: 20px;
 }
 
+<<<<<<< ours
+=======
+.recent-scores-card {
+  gap: 18px;
+}
+
+.recent-scores-card__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recent-scores-card__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  letter-spacing: 0.02em;
+}
+
+.recent-scores-card__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.recent-scores-card--chart {
+  padding-bottom: 24px;
+}
+
+.recent-scores-card--chart .recent-scores-card__header {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recent-scores-card--chart .recent-scores-card__title {
+  font-size: 22px;
+}
+
+.recent-scores-card--chart .recent-scores-card__label {
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .recent-scores-card__title {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .recent-scores-card--chart .recent-scores-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+>>>>>>> theirs
 .dashboard-card__header {
   display: flex;
   flex-wrap: wrap;
