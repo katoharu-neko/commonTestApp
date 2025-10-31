@@ -9,4 +9,9 @@
 <line x1="512.00" y1="512.00" x2="723.60" y2="803.25" stroke="#1E88E5" stroke-width="12" />
 <line x1="512.00" y1="512.00" x2="300.40" y2="803.25" stroke="#1E88E5" stroke-width="12" />
 <line x1="512.00" y1="512.00" x2="169.62" y2="400.75" stroke="#1E88E5" stroke-width="12" />
+<text x="512.00" y="512.00" text-anchor="middle" dominant-baseline="middle"
+    font-family="Montserrat, 'Arial Black', Impact, 'Noto Sans', sans-serif" font-weight="700" font-size="120"
+    fill="#0D47A1" stroke="#FFFFFF" stroke-width="8" paint-order="stroke">
+    TestAdviser
+</text>
 </svg>

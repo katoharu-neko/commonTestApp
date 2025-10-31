@@ -129,9 +129,8 @@ function Navbar() {
         <img
           src={logoSvg}
           alt="Test Adviser ロゴ"
-          style={{ width: 42, height: 42, display: 'block' }}
+          style={{ width: 45, height: 45, display: 'block' }}
         />
-        <span className="navbar__title">Test Adviser</span>
       </NavLink>
 
       {isAuthed ? (
