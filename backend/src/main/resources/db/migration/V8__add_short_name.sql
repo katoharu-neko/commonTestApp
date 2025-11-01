@@ -1,8 +1,3 @@
-
---新教科　情報を追加
-INSERT INTO subjects (category, name, full_score) VALUES
-('情報', '情報I', 100),
-
 ALTER TABLE subjects ADD COLUMN short_name VARCHAR(255);
 
 UPDATE subjects
@@ -25,13 +20,16 @@ SET short_name = CASE id
   WHEN 16 THEN '地学基'
   WHEN 17 THEN '物理'
   WHEN 18 THEN '化学'
-  WHEN 19 THEN '地学'
-  WHEN 20 THEN '英語R'
-  WHEN 21 THEN '英語L'
-  WHEN 22 THEN 'ドイ語'
-  WHEN 23 THEN 'フラ語'
-  WHEN 24 THEN '中国語'
-  WHEN 25 THEN '韓国語'
-  WHEN 26 THEN '情報'
+  WHEN 19 THEN '生物'
+  WHEN 20 THEN '地学'
+  WHEN 21 THEN '英語R'
+  WHEN 22 THEN '英語L'
+  WHEN 23 THEN 'ドイ語'
+  WHEN 24 THEN 'フラ語'
+  WHEN 25 THEN '中国語'
+  WHEN 26 THEN '韓国語'
   ELSE short_name
 END;
+
+INSERT INTO subjects (category, name, full_score, is_active, short_name) VALUES
+('情報', '情報I', 100, 1, '情報');
