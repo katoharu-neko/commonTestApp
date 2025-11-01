@@ -2,6 +2,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import api from '../api/apiClient';
+import {
+  createSubjectLookup,
+  getSubjectDisplayName,
+  sortSubjectNamesByCategory,
+} from '../utils/subjectOrder';
 
 // 入力フォーム + 年度別レーダーチャート（得点率%表示）
 // subjectsテーブルと連携し、カテゴリ→科目の絞り込みが可能
@@ -68,6 +73,13 @@ const ScoresRadarByYear = () => {
     bootstrap();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const subjectLookup = useMemo(
+    function () {
+      return createSubjectLookup(subjects);
+    },
+    [subjects]
+  );
 
   // 選択カテゴリに応じた科目一覧
   const filteredSubjects = useMemo(() => {
@@ -137,6 +149,7 @@ const ScoresRadarByYear = () => {
 
     // その年度に出現した科目一覧（重複排除）
     const subjectNames = Array.from(new Set(inYear.map(s => s.subject)));
+    const sortedSubjects = sortSubjectNamesByCategory(subjectNames, subjectLookup);
 
     // 各科目の満点を subjects テーブルから拾う（なければ100）
     const fullScoreMap = new Map();
@@ -145,10 +158,12 @@ const ScoresRadarByYear = () => {
     });
 
     // radar の軸（maxは100固定＝得点率%）
-    const indicator = subjectNames.map(name => ({ name, max: 100 }));
+    const indicator = sortedSubjects.map(function (name) {
+      return { name: getSubjectDisplayName(name, subjectLookup), max: 100 };
+    });
 
     // 各科目の「最後のスコア」を％換算（平均にしたい場合はここを平均化に変える）
-    const percentValues = subjectNames.map(name => {
+    const percentValues = sortedSubjects.map(function (name) {
       const items = inYear.filter(i => i.subject === name);
       const last = items[items.length - 1]; // 最後の点を採用
       const full = fullScoreMap.get(name) || 100;
@@ -157,7 +172,7 @@ const ScoresRadarByYear = () => {
     });
 
     return { indicator, data: percentValues };
-  }, [scores, viewYear, subjects]);
+  }, [scores, viewYear, subjects, subjectLookup]);
 
   const stroke = '#3BAFDA';
   const fill   = 'rgba(59,175,218,0.18)';

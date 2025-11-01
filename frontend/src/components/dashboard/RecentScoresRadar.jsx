@@ -2,6 +2,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import api from '../../api/apiClient';
+import {
+  createSubjectLookup,
+  getSubjectDisplayName,
+  sortSubjectNamesByCategory,
+} from '../../utils/subjectOrder';
 
 const MAX_PERCENT = 100;
 
@@ -60,6 +65,10 @@ const RecentScoresRadar = () => {
     return map;
   }, [subjects]);
 
+  const subjectLookup = useMemo(() => {
+    return createSubjectLookup(subjects);
+  }, [subjects]);
+
   const groupedByYear = useMemo(() => {
     const map = new Map();
     scores.forEach((item) => {
@@ -115,7 +124,7 @@ const RecentScoresRadar = () => {
         if (row?.subject) subjectsSet.add(row.subject);
       });
 
-      const subjectList = Array.from(subjectsSet).sort((a, b) => a.localeCompare(b, 'ja'));
+      const subjectList = sortSubjectNamesByCategory(Array.from(subjectsSet), subjectLookup);
 
       if (!subjectList.length) return;
 
@@ -132,7 +141,10 @@ const RecentScoresRadar = () => {
         return Math.round(capped * 10) / 10;
       });
 
-      const indicator = subjectList.map((name) => ({ name, max: MAX_PERCENT }));
+      const indicator = subjectList.map((name) => ({
+        name: getSubjectDisplayName(name, subjectLookup),
+        max: MAX_PERCENT,
+      }));
 
       const chartOption = {
         tooltip: {},
@@ -179,7 +191,7 @@ const RecentScoresRadar = () => {
     });
 
     return configs;
-  }, [yearOptions, groupedByYear, fullScoreMap]);
+  }, [yearOptions, groupedByYear, fullScoreMap, subjectLookup]);
 
   if (loading) {
     return [

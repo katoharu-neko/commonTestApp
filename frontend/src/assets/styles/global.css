@@ -365,6 +365,7 @@ textarea {
   margin-right: auto;
   text-decoration: none;
   color: #111827;
+  flex-shrink: 0;
 }
 
 .navbar__title {
@@ -376,23 +377,38 @@ textarea {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-shrink: 0;
 }
 
 .navbar__user {
   font-weight: 600;
   color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .navbar__menu-trigger {
-  padding: 8px 12px;
-  background: #ffffff;
+  padding: 6px;
+  border: none;
+  background: none;
   font-size: 30px;
+  color: #1f2937;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .navbar__menu-trigger:hover {
-  background: #f3f4f6;
+  color: #2563eb;
+}
+
+.navbar__menu-trigger:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline-offset: 2px;
 }
 
 .navbar__menu-trigger:active {
@@ -467,15 +483,16 @@ textarea {
 
 @media (max-width: 768px) {
   .navbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 10px;
     padding: 12px 16px;
   }
 
   .navbar__actions {
-    width: 100%;
-    justify-content: space-between;
-    gap: 12px;
+    margin-left: auto;
+    width: auto;
+    justify-content: flex-end;
+    gap: 10px;
   }
 
   .navbar__title {
@@ -484,12 +501,14 @@ textarea {
 
   .navbar__user {
     font-size: 14px;
+    max-width: min(45vw, 160px);
   }
 }
 
 @media (max-width: 480px) {
   .navbar__actions {
     flex-direction: row;
+    gap: 8px;
   }
 
   .navbar__auth-link {
