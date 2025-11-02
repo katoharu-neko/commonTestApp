@@ -3,7 +3,11 @@ function createSubjectLookup(subjects) {
   if (!Array.isArray(subjects)) return map;
   subjects.forEach(function (subject) {
     if (!subject) return;
-    if (subject.name) {
+    if (typeof subject.id === 'number') {
+      map.set(subject.id, subject);
+      map.set(String(subject.id), subject);
+    }
+    if (subject.name && !map.has(subject.name)) {
       map.set(subject.name, subject);
     }
     if (subject.short_name && !map.has(subject.short_name)) {
@@ -13,50 +17,49 @@ function createSubjectLookup(subjects) {
   return map;
 }
 
-function sortSubjectNamesByCategory(subjectNames, subjectLookup) {
-  if (!Array.isArray(subjectNames)) return [];
+function sortSubjectIdsByCategory(subjectIds, subjectLookup) {
+  if (!Array.isArray(subjectIds)) return [];
 
-  const withSortKey = subjectNames.map(function (name) {
-    const subject = subjectLookup.get(name);
-    const id = subject && typeof subject.id === 'number' ? subject.id : Number.POSITIVE_INFINITY;
-    return { name, id, subject };
+  const collator = new Intl.Collator('ja');
+
+  const withSortKey = subjectIds.map(function (id) {
+    const subject = subjectLookup.get(id);
+    const numericId = typeof id === 'number' ? id : Number(id);
+    const sortKey = subject && typeof subject.id === 'number'
+      ? subject.id
+      : Number.isFinite(numericId)
+        ? numericId
+        : Number.POSITIVE_INFINITY;
+    const label = subject && subject.short_name
+      ? subject.short_name
+      : subject && subject.name
+        ? subject.name
+        : String(id);
+    return { id, sortKey, label };
   });
-
-  const localeComparator = function (a, b) {
-    const labelA = a.subject && a.subject.short_name
-      ? a.subject.short_name
-      : a.subject && a.subject.name
-        ? a.subject.name
-        : a.name;
-    const labelB = b.subject && b.subject.short_name
-      ? b.subject.short_name
-      : b.subject && b.subject.name
-        ? b.subject.name
-        : b.name;
-    return String(labelA).localeCompare(String(labelB), 'ja');
-  };
 
   withSortKey.sort(function (a, b) {
-    if (Number.isFinite(a.id) && Number.isFinite(b.id)) {
-      if (a.id !== b.id) return a.id - b.id;
-      return localeComparator(a, b);
+    if (Number.isFinite(a.sortKey) && Number.isFinite(b.sortKey)) {
+      if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
+      return collator.compare(a.label, b.label);
     }
-    if (Number.isFinite(a.id)) return -1;
-    if (Number.isFinite(b.id)) return 1;
-    return localeComparator(a, b);
+    if (Number.isFinite(a.sortKey)) return -1;
+    if (Number.isFinite(b.sortKey)) return 1;
+    return collator.compare(a.label, b.label);
   });
 
-  return withSortKey.map(function (item) { return item.name; });
+  return withSortKey.map(function (item) { return item.id; });
 }
 
-function getSubjectDisplayName(subjectName, subjectLookup) {
-  const subject = subjectLookup.get(subjectName);
+function getSubjectDisplayName(subjectKey, subjectLookup) {
+  const subject = subjectLookup.get(subjectKey);
   if (subject && subject.short_name) return subject.short_name;
-  return subjectName;
+  if (subject && subject.name) return subject.name;
+  return String(subjectKey ?? '');
 }
 
 export {
   createSubjectLookup,
-  sortSubjectNamesByCategory,
+  sortSubjectIdsByCategory,
   getSubjectDisplayName,
 };
