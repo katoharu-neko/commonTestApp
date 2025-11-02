@@ -52,7 +52,6 @@ function sortSubjectNamesByCategory(subjectNames, subjectLookup) {
 function getSubjectDisplayName(subjectName, subjectLookup) {
   const subject = subjectLookup.get(subjectName);
   if (subject && subject.short_name) return subject.short_name;
-  if (subject && subject.name) return subject.name;
   return subjectName;
 }
 
