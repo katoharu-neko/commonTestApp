@@ -5,7 +5,7 @@ import api from '../api/apiClient';
 import {
   createSubjectLookup,
   getSubjectDisplayName,
-  sortSubjectNamesByCategory,
+  sortSubjectIdsByCategory,
 } from '../utils/subjectOrder';
 
 // 入力フォーム + 年度別レーダーチャート（得点率%表示）
@@ -19,7 +19,7 @@ const ScoresRadarByYear = () => {
   // 入力フォームの状態
   const [year, setYear] = useState('');
   const [category, setCategory] = useState('');
-  const [subjectName, setSubjectName] = useState('');
+  const [subjectId, setSubjectId] = useState('');
   const [score, setScore] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
@@ -89,9 +89,9 @@ const ScoresRadarByYear = () => {
 
   // 選択中の科目の満点
   const selectedFullScore = useMemo(() => {
-    const s = filteredSubjects.find(f => f.name === subjectName);
+    const s = filteredSubjects.find(f => String(f.id) === String(subjectId));
     return s?.fullScore || 100;
-  }, [filteredSubjects, subjectName]);
+  }, [filteredSubjects, subjectId]);
 
   // ---- 入力送信 ----
   const handleSubmit = async (e) => {
@@ -99,7 +99,7 @@ const ScoresRadarByYear = () => {
     setFormError('');
 
     // バリデーション
-    if (!year || !category || !subjectName || !score) {
+    if (!year || !category || !subjectId || !score) {
       setFormError('年度・カテゴリ・科目・得点は必須です。');
       return;
     }
@@ -113,7 +113,7 @@ const ScoresRadarByYear = () => {
       setSubmitting(true);
       // サーバーに登録
       await api.post('/api/scores', {
-        subject: subjectName,
+        subjectId: Number(subjectId),
         score: numericScore,
         year: Number(year)
       });
@@ -148,28 +148,35 @@ const ScoresRadarByYear = () => {
     if (!inYear.length) return { indicator: [], data: [] };
 
     // その年度に出現した科目一覧（重複排除）
-    const subjectNames = Array.from(new Set(inYear.map(s => s.subject)));
-    const sortedSubjects = sortSubjectNamesByCategory(subjectNames, subjectLookup);
+      const subjectIds = Array.from(new Set(
+        inYear
+          .map(s => s.subjectId)
+          .filter(id => id !== null && id !== undefined)
+      ));
+      const sortedSubjects = sortSubjectIdsByCategory(subjectIds, subjectLookup);
 
-    // 各科目の満点を subjects テーブルから拾う（なければ100）
-    const fullScoreMap = new Map();
-    subjects.forEach(s => {
-      fullScoreMap.set(s.name, s.fullScore || 100);
-    });
+      // 各科目の満点を subjects テーブルから拾う（なければ100）
+      const fullScoreMap = new Map();
+      subjects.forEach(s => {
+        if (typeof s.id === 'number') {
+          fullScoreMap.set(s.id, s.fullScore || 100);
+        }
+      });
 
-    // radar の軸（maxは100固定＝得点率%）
-    const indicator = sortedSubjects.map(function (name) {
-      return { name: getSubjectDisplayName(name, subjectLookup), max: 100 };
-    });
+      // radar の軸（maxは100固定＝得点率%）
+      const indicator = sortedSubjects.map(function (id) {
+        return { name: getSubjectDisplayName(id, subjectLookup), max: 100 };
+      });
 
-    // 各科目の「最後のスコア」を％換算（平均にしたい場合はここを平均化に変える）
-    const percentValues = sortedSubjects.map(function (name) {
-      const items = inYear.filter(i => i.subject === name);
-      const last = items[items.length - 1]; // 最後の点を採用
-      const full = fullScoreMap.get(name) || 100;
-      const pct = full > 0 ? (Number(last?.score || 0) / full) * 100 : 0;
-      return Math.round(pct * 10) / 10; // 小数1位で丸め
-    });
+      // 各科目の「最後のスコア」を％換算（平均にしたい場合はここを平均化に変える）
+      const percentValues = sortedSubjects.map(function (id) {
+        const items = inYear.filter(i => String(i.subjectId) === String(id));
+        const last = items[items.length - 1]; // 最後の点を採用
+        const numericId = typeof id === 'number' ? id : Number(id);
+        const full = fullScoreMap.get(numericId) || fullScoreMap.get(id) || 100;
+        const pct = full > 0 ? (Number(last?.score || 0) / full) * 100 : 0;
+        return Math.round(pct * 10) / 10; // 小数1位で丸め
+      });
 
     return { indicator, data: percentValues };
   }, [scores, viewYear, subjects, subjectLookup]);
@@ -261,7 +268,7 @@ const ScoresRadarByYear = () => {
             <span>カテゴリ</span>
             <select
               value={category}
-              onChange={e => { setCategory(e.target.value); setSubjectName(''); }}
+              onChange={e => { setCategory(e.target.value); setSubjectId(''); }}
             >
               <option value="">選択してください</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -271,13 +278,13 @@ const ScoresRadarByYear = () => {
           <label className="form-field">
             <span>科目</span>
             <select
-              value={subjectName}
-              onChange={e => setSubjectName(e.target.value)}
+              value={subjectId}
+              onChange={e => setSubjectId(e.target.value)}
               disabled={!category}
             >
               <option value="">選択してください</option>
               {filteredSubjects.map(s => (
-                <option key={s.id} value={s.name}>
+                <option key={s.id} value={s.id}>
                   {s.name}（満点:{s.fullScore ?? 100}）
                 </option>
               ))}
@@ -293,7 +300,7 @@ const ScoresRadarByYear = () => {
               min={0}
               max={selectedFullScore}
               placeholder={`0〜${selectedFullScore}`}
-              disabled={!subjectName}
+              disabled={!subjectId}
             />
           </label>
 

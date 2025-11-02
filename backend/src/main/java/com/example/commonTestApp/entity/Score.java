@@ -2,6 +2,7 @@ package com.example.commonTestApp.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -21,7 +22,8 @@ public class Score {
     // ユーザーID（外部キー相当）
     private Long userId;
 
-    private String subject;
+    @Column(name = "subject_id")
+    private Integer subjectId;
     private Integer score;
 
     private Integer year; // 例：2025年共通テストなど

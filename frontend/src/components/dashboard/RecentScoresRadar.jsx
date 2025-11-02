@@ -5,7 +5,7 @@ import api from '../../api/apiClient';
 import {
   createSubjectLookup,
   getSubjectDisplayName,
-  sortSubjectNamesByCategory,
+  sortSubjectIdsByCategory,
 } from '../../utils/subjectOrder';
 
 const MAX_PERCENT = 100;
@@ -58,8 +58,8 @@ const RecentScoresRadar = () => {
   const fullScoreMap = useMemo(() => {
     const map = new Map();
     subjects.forEach((subject) => {
-      if (subject?.name) {
-        map.set(subject.name, subject.fullScore || MAX_PERCENT);
+      if (subject && typeof subject.id === 'number') {
+        map.set(subject.id, subject.fullScore || MAX_PERCENT);
       }
     });
     return map;
@@ -114,25 +114,33 @@ const RecentScoresRadar = () => {
         .flatMap((year) => groupedByYear.get(year) ?? [])
         .sort((a, b) => {
           if (a.year !== b.year) return Number(a.year) - Number(b.year);
-          return String(a.subject).localeCompare(String(b.subject));
+          const aId = typeof a.subjectId === 'number' ? a.subjectId : Number(a.subjectId);
+          const bId = typeof b.subjectId === 'number' ? b.subjectId : Number(b.subjectId);
+          if (Number.isFinite(aId) && Number.isFinite(bId)) return aId - bId;
+          if (Number.isFinite(aId)) return -1;
+          if (Number.isFinite(bId)) return 1;
+          return 0;
         });
 
       if (!dataRows.length) return;
 
       const subjectsSet = new Set();
       dataRows.forEach((row) => {
-        if (row?.subject) subjectsSet.add(row.subject);
+        if (row?.subjectId !== undefined && row?.subjectId !== null) {
+          subjectsSet.add(row.subjectId);
+        }
       });
 
-      const subjectList = sortSubjectNamesByCategory(Array.from(subjectsSet), subjectLookup);
+      const subjectList = sortSubjectIdsByCategory(Array.from(subjectsSet), subjectLookup);
 
       if (!subjectList.length) return;
 
-      const values = subjectList.map((subjectName) => {
-        const rows = dataRows.filter((row) => row.subject === subjectName);
+      const values = subjectList.map((subjectId) => {
+        const rows = dataRows.filter((row) => String(row.subjectId) === String(subjectId));
         if (!rows.length) return 0;
 
-        const fullScore = fullScoreMap.get(subjectName) || MAX_PERCENT;
+        const numericId = typeof subjectId === 'number' ? subjectId : Number(subjectId);
+        const fullScore = fullScoreMap.get(numericId) || fullScoreMap.get(subjectId) || MAX_PERCENT;
 
         const avg =
           rows.reduce((sum, row) => sum + Number(row.score || 0), 0) / rows.length;
@@ -141,8 +149,8 @@ const RecentScoresRadar = () => {
         return Math.round(capped * 10) / 10;
       });
 
-      const indicator = subjectList.map((name) => ({
-        name: getSubjectDisplayName(name, subjectLookup),
+      const indicator = subjectList.map((id) => ({
+        name: getSubjectDisplayName(id, subjectLookup),
         max: MAX_PERCENT,
       }));
 
