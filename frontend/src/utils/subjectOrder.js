@@ -1,10 +1,3 @@
-const SUBJECT_CATEGORY_SEQUENCE = ['外国語', '数学', '国語', '理科', '社会', '情報'];
-
-const SUBJECT_CATEGORY_ORDER = SUBJECT_CATEGORY_SEQUENCE.reduce(function (acc, category, index) {
-  acc[category] = index;
-  return acc;
-}, {});
-
 function createSubjectLookup(subjects) {
   const map = new Map();
   if (!Array.isArray(subjects)) return map;
@@ -20,48 +13,40 @@ function createSubjectLookup(subjects) {
   return map;
 }
 
-function getSubjectCategoryOrder(subject) {
-  const category = subject && subject.category ? subject.category : '';
-  return Object.prototype.hasOwnProperty.call(SUBJECT_CATEGORY_ORDER, category)
-    ? SUBJECT_CATEGORY_ORDER[category]
-    : Number.MAX_SAFE_INTEGER;
-}
-
 function sortSubjectNamesByCategory(subjectNames, subjectLookup) {
   if (!Array.isArray(subjectNames)) return [];
 
-  const grouped = new Map();
-  subjectNames.forEach(function (name) {
+  const withSortKey = subjectNames.map(function (name) {
     const subject = subjectLookup.get(name);
-    const category = subject && subject.category ? subject.category : '';
-    if (!grouped.has(category)) grouped.set(category, []);
-    grouped.get(category).push(name);
+    const id = subject && typeof subject.id === 'number' ? subject.id : Number.POSITIVE_INFINITY;
+    return { name, id, subject };
   });
 
-  const labelComparator = function (a, b) {
-    const subjectA = subjectLookup.get(a);
-    const subjectB = subjectLookup.get(b);
-    const labelA = subjectA && subjectA.short_name ? subjectA.short_name : (subjectA && subjectA.name) ? subjectA.name : a;
-    const labelB = subjectB && subjectB.short_name ? subjectB.short_name : (subjectB && subjectB.name) ? subjectB.name : b;
+  const localeComparator = function (a, b) {
+    const labelA = a.subject && a.subject.short_name
+      ? a.subject.short_name
+      : a.subject && a.subject.name
+        ? a.subject.name
+        : a.name;
+    const labelB = b.subject && b.subject.short_name
+      ? b.subject.short_name
+      : b.subject && b.subject.name
+        ? b.subject.name
+        : b.name;
     return String(labelA).localeCompare(String(labelB), 'ja');
   };
 
-  const ordered = [];
-  SUBJECT_CATEGORY_SEQUENCE.forEach(function (category) {
-    const items = grouped.get(category);
-    if (Array.isArray(items) && items.length) {
-      ordered.push.apply(ordered, items.slice().sort(labelComparator));
+  withSortKey.sort(function (a, b) {
+    if (Number.isFinite(a.id) && Number.isFinite(b.id)) {
+      if (a.id !== b.id) return a.id - b.id;
+      return localeComparator(a, b);
     }
-    grouped.delete(category);
+    if (Number.isFinite(a.id)) return -1;
+    if (Number.isFinite(b.id)) return 1;
+    return localeComparator(a, b);
   });
 
-  if (grouped.size) {
-    Array.from(grouped.values()).forEach(function (items) {
-      ordered.push.apply(ordered, items.slice().sort(labelComparator));
-    });
-  }
-
-  return ordered;
+  return withSortKey.map(function (item) { return item.name; });
 }
 
 function getSubjectDisplayName(subjectName, subjectLookup) {
@@ -72,8 +57,6 @@ function getSubjectDisplayName(subjectName, subjectLookup) {
 }
 
 export {
-  SUBJECT_CATEGORY_SEQUENCE,
-  SUBJECT_CATEGORY_ORDER,
   createSubjectLookup,
   sortSubjectNamesByCategory,
   getSubjectDisplayName,
