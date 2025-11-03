@@ -10,6 +10,8 @@ import {
 
 const MAX_PERCENT = 100;
 
+const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
+
 const RecentScoresRadar = () => {
   const [scores, setScores] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -83,155 +85,163 @@ const RecentScoresRadar = () => {
     return createSubjectLookup(subjects);
   }, [subjects]);
 
-  const groupedByYear = useMemo(() => {
+  const groupedByYearAttempt = useMemo(() => {
     const map = new Map();
     scores.forEach((item) => {
       const year = Number(item?.year);
       if (!year || Number.isNaN(year)) return;
-      if (!map.has(year)) map.set(year, []);
-      map.get(year).push(item);
+      const attemptRaw = Number(item?.attemptNumber ?? 1);
+      const attempt = Number.isFinite(attemptRaw) && attemptRaw > 0 ? Math.trunc(attemptRaw) : 1;
+      const key = `${year}::${attempt}`;
+      if (!map.has(key)) {
+        map.set(key, { year, attempt, rows: [] });
+      }
+      map.get(key).rows.push(item);
     });
 
     return map;
   }, [scores]);
 
-  const sortedYears = useMemo(() => {
-    return Array.from(groupedByYear.keys()).sort((a, b) => b - a);
-  }, [groupedByYear]);
+  const sortedCombos = useMemo(() => {
+    return Array.from(groupedByYearAttempt.values()).sort((a, b) => {
+      if (b.year !== a.year) return b.year - a.year;
+      return a.attempt - b.attempt;
+    });
+  }, [groupedByYearAttempt]);
 
-  const yearOptions = useMemo(() => {
-    if (!sortedYears.length) return [];
+  const comboOptions = useMemo(() => {
+    if (!sortedCombos.length) return [];
 
-    const recent = sortedYears.slice(0, 3).map((year) => ({
-      key: String(year),
-      label: String(year),
-      years: [year],
+    const primary = sortedCombos.slice(0, 3).map((combo) => ({
+      key: `${combo.year}-${combo.attempt}`,
+      label: `${combo.year}年 ${formatAttemptLabel(combo.attempt)}`,
+      rows: combo.rows.slice(),
     }));
 
-    const olderYears = sortedYears.slice(3);
-    if (olderYears.length) {
-      recent.push({
+    const others = sortedCombos.slice(3);
+    if (others.length) {
+      primary.push({
         key: 'others',
         label: 'それ以前',
-        years: olderYears,
+        rows: others.flatMap((entry) => entry.rows),
       });
     }
 
-    return recent;
-  }, [sortedYears]);
+    return primary;
+  }, [sortedCombos]);
 
   const cardConfigs = useMemo(() => {
-    const configs = [];
+    if (!comboOptions.length) return [];
 
-    yearOptions.forEach((option) => {
-      const dataRows = option.years
-        .flatMap((year) => groupedByYear.get(year) ?? [])
-        .sort((a, b) => {
-          if (a.year !== b.year) return Number(a.year) - Number(b.year);
-          const keyA = a.subjectId ?? a.subjectName ?? a.subject;
-          const keyB = b.subjectId ?? b.subjectName ?? b.subject;
-          const labelA = getSubjectDisplayName(keyA, subjectLookup) || a.subjectName || a.subject || '';
-          const labelB = getSubjectDisplayName(keyB, subjectLookup) || b.subjectName || b.subject || '';
-          return labelA.localeCompare(labelB, 'ja');
-        });
+    return comboOptions
+      .map((option) => {
+        const dataRows = (option.rows ?? [])
+          .slice()
+          .sort((a, b) => {
+            if (a.year !== b.year) return Number(a.year) - Number(b.year);
+            const keyA = a.subjectId ?? a.subjectName ?? a.subject;
+            const keyB = b.subjectId ?? b.subjectName ?? b.subject;
+            const labelA = getSubjectDisplayName(keyA, subjectLookup) || a.subjectName || a.subject || '';
+            const labelB = getSubjectDisplayName(keyB, subjectLookup) || b.subjectName || b.subject || '';
+            return labelA.localeCompare(labelB, 'ja');
+          });
 
-      if (!dataRows.length) return;
+        if (!dataRows.length) return null;
 
-      const subjectsSet = new Set();
-      dataRows.forEach((row) => {
-        if (!row) return;
-        if (row.subjectId !== undefined && row.subjectId !== null) {
-          subjectsSet.add(row.subjectId);
-        } else if (row.subjectName) {
-          subjectsSet.add(row.subjectName);
-        } else if (row.subject) {
-          subjectsSet.add(row.subject);
-        }
-      });
-
-      const subjectList = sortSubjectNamesByCategory(Array.from(subjectsSet), subjectLookup);
-
-      if (!subjectList.length) return;
-
-      const values = subjectList.map((subjectKey) => {
-        const rows = dataRows.filter((row) => {
-          if (!row) return false;
+        const subjectsSet = new Set();
+        dataRows.forEach((row) => {
+          if (!row) return;
           if (row.subjectId !== undefined && row.subjectId !== null) {
-            if (String(row.subjectId) === String(subjectKey)) return true;
+            subjectsSet.add(row.subjectId);
+          } else if (row.subjectName) {
+            subjectsSet.add(row.subjectName);
+          } else if (row.subject) {
+            subjectsSet.add(row.subject);
           }
-          const fallback = row.subjectName ?? row.subject;
-          return fallback === subjectKey;
         });
-        if (!rows.length) return 0;
 
-        const keyString = String(subjectKey);
-        let fullScore = fullScoreMap.get(keyString);
-        if (fullScore === undefined) {
-          const subject = subjectLookup.get(keyString) || (typeof subjectKey === 'string' ? subjectLookup.get(subjectKey) : undefined);
-          fullScore = subject?.fullScore ?? MAX_PERCENT;
-        }
+        const subjectList = sortSubjectNamesByCategory(Array.from(subjectsSet), subjectLookup);
 
-        const avg =
-          rows.reduce((sum, row) => sum + Number(row.score || 0), 0) / rows.length;
-        const percent = fullScore > 0 ? (avg / fullScore) * 100 : 0;
-        const capped = Math.min(Math.max(percent, 0), MAX_PERCENT);
-        return Math.round(capped * 10) / 10;
-      });
+        if (!subjectList.length) return null;
 
-      const indicator = subjectList.map((key) => ({
-        name:
-          getSubjectDisplayName(key, subjectLookup)
-          || scoreSubjectNameMap.get(String(key))
-          || (typeof key === 'string' ? key : `科目ID:${key}`),
-        max: MAX_PERCENT,
-      }));
+        const values = subjectList.map((subjectKey) => {
+          const rows = dataRows.filter((row) => {
+            if (!row) return false;
+            if (row.subjectId !== undefined && row.subjectId !== null) {
+              if (String(row.subjectId) === String(subjectKey)) return true;
+            }
+            const fallback = row.subjectName ?? row.subject;
+            return fallback === subjectKey;
+          });
+          if (!rows.length) return 0;
 
-      const chartOption = {
-        tooltip: {},
-        radar: {
-          indicator,
-          name: {
-            color: '#0f172a',
-            fontSize: 13,
+          const keyString = String(subjectKey);
+          let fullScore = fullScoreMap.get(keyString);
+          if (fullScore === undefined) {
+            const subject = subjectLookup.get(keyString) || (typeof subjectKey === 'string' ? subjectLookup.get(subjectKey) : undefined);
+            fullScore = subject?.fullScore ?? MAX_PERCENT;
+          }
+
+          const avg =
+            rows.reduce((sum, row) => sum + Number(row.score || 0), 0) / rows.length;
+          const percent = fullScore > 0 ? (avg / fullScore) * 100 : 0;
+          const capped = Math.min(Math.max(percent, 0), MAX_PERCENT);
+          return Math.round(capped * 10) / 10;
+        });
+
+        const indicator = subjectList.map((key) => ({
+          name:
+            getSubjectDisplayName(key, subjectLookup)
+            || scoreSubjectNameMap.get(String(key))
+            || (typeof key === 'string' ? key : `科目ID:${key}`),
+          max: MAX_PERCENT,
+        }));
+
+        const chartOption = {
+          tooltip: {},
+          radar: {
+            indicator,
+            name: {
+              color: '#0f172a',
+              fontSize: 13,
+            },
+            splitLine: {
+              lineStyle: { color: ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6'] },
+            },
+            splitArea: {
+              areaStyle: { color: ['rgba(59,130,246,0.08)', 'rgba(59,130,246,0.02)'] },
+            },
+            axisLine: {
+              lineStyle: { color: 'rgba(59,130,246,0.45)' },
+            },
           },
-          splitLine: {
-            lineStyle: { color: ['#dbeafe', '#bfdbfe', '#93c5fd', '#60a5fa', '#3b82f6'] },
-          },
-          splitArea: {
-            areaStyle: { color: ['rgba(59,130,246,0.08)', 'rgba(59,130,246,0.02)'] },
-          },
-          axisLine: {
-            lineStyle: { color: 'rgba(59,130,246,0.45)' },
-          },
-        },
-        series: [
-          {
-            type: 'radar',
-            data: [
-              {
-                value: values,
-                name:
-                  option.key === 'others' ? '平均（それ以前）' : `${option.label} 平均`,
-                areaStyle: { color: 'rgba(59,130,246,0.25)' },
-                lineStyle: { color: '#2563eb', width: 2 },
-                itemStyle: { color: '#2563eb' },
-              },
-            ],
-            symbol: 'circle',
-            symbolSize: 5,
-          },
-        ],
-      };
+          series: [
+            {
+              type: 'radar',
+              data: [
+                {
+                  value: values,
+                  name:
+                    option.key === 'others' ? '平均（それ以前）' : `${option.label} 平均`,
+                  areaStyle: { color: 'rgba(59,130,246,0.25)' },
+                  lineStyle: { color: '#2563eb', width: 2 },
+                  itemStyle: { color: '#2563eb' },
+                },
+              ],
+              symbol: 'circle',
+              symbolSize: 5,
+            },
+          ],
+        };
 
-      configs.push({
-        key: option.key,
-        label: option.label,
-        chartOption,
-      });
-    });
-
-    return configs;
-  }, [yearOptions, groupedByYear, fullScoreMap, subjectLookup, scoreSubjectNameMap]);
+        return {
+          key: option.key,
+          label: option.label,
+          chartOption,
+        };
+      })
+      .filter(Boolean);
+  }, [comboOptions, fullScoreMap, subjectLookup, scoreSubjectNameMap]);
 
   if (loading) {
     return [
@@ -273,9 +283,7 @@ const RecentScoresRadar = () => {
       <div key={config.key} className="card dashboard-card recent-scores-card recent-scores-card--chart">
         <div className="recent-scores-card__header">
           <span className="recent-scores-card__label">直近のテスト結果</span>
-          <h2 className="recent-scores-card__title">
-            {config.label === 'それ以前' ? config.label : `${config.label}年`}
-          </h2>
+          <h2 className="recent-scores-card__title">{config.label}</h2>
         </div>
         <ReactECharts option={config.chartOption} style={{ width: '100%', height: 320 }} />
       </div>

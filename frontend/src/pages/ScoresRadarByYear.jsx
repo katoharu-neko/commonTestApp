@@ -8,6 +8,39 @@ import {
   sortSubjectNamesByCategory,
 } from '../utils/subjectOrder';
 
+const DEFAULT_ATTEMPT_OPTIONS = [1, 2, 3];
+
+const buildAttemptOptionsByYear = (scoresList) => {
+  const yearToAttempts = new Map();
+
+  scoresList.forEach((item) => {
+    if (!item) return;
+    const { year } = item;
+    if (year === undefined || year === null) return;
+
+    const attemptRaw = Number(item.attemptNumber ?? 1);
+    const attempt = Number.isFinite(attemptRaw) && attemptRaw > 0
+      ? Math.trunc(attemptRaw)
+      : 1;
+
+    const yearKey = String(year);
+    if (!yearToAttempts.has(yearKey)) {
+      yearToAttempts.set(yearKey, new Set());
+    }
+    yearToAttempts.get(yearKey).add(attempt);
+  });
+
+  const normalized = new Map();
+  yearToAttempts.forEach((attemptSet, yearKey) => {
+    const sorted = Array.from(attemptSet).sort((a, b) => a - b);
+    normalized.set(yearKey, sorted);
+  });
+
+  return normalized;
+};
+
+const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
+
 // 入力フォーム + 年度別レーダーチャート（得点率%表示）
 // subjectsテーブルと連携し、カテゴリ→科目の絞り込みが可能
 const ScoresRadarByYear = () => {
@@ -21,12 +54,14 @@ const ScoresRadarByYear = () => {
   const [category, setCategory] = useState('');
   const [subjectId, setSubjectId] = useState('');
   const [score, setScore] = useState('');
+  const [attempt, setAttempt] = useState('1');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
   // 表示用 年度セレクト
   const [years, setYears] = useState([]);
   const [viewYear, setViewYear] = useState('');
+  const [viewAttempt, setViewAttempt] = useState('1');
 
   const [loadingInit, setLoadingInit] = useState(true);
   const [initError, setInitError] = useState('');
@@ -43,17 +78,25 @@ const ScoresRadarByYear = () => {
         const list = Array.isArray(resScores.data) ? resScores.data : [];
         setScores(list);
 
+        const attemptMap = buildAttemptOptionsByYear(list);
+
         // 年度候補
         const ys = Array.from(new Set(list.map(s => s.year))).sort();
         setYears(ys);
         if (ys.length) {
           const latest = ys[ys.length - 1];
-          setViewYear(String(latest));
-          if (!year) setYear(String(latest));
+          const latestKey = String(latest);
+          setViewYear(latestKey);
+          if (!year) setYear(latestKey);
+
+          const attemptsForLatest = attemptMap.get(latestKey);
+          setViewAttempt(String((attemptsForLatest && attemptsForLatest[0]) || 1));
         } else {
           const now = new Date().getFullYear();
-          setViewYear(String(now));
-          if (!year) setYear(String(now));
+          const nowKey = String(now);
+          setViewYear(nowKey);
+          setViewAttempt('1');
+          if (!year) setYear(nowKey);
         }
 
         // 2) 科目とカテゴリ
@@ -101,6 +144,28 @@ const ScoresRadarByYear = () => {
     return map;
   }, [scores]);
 
+  const attemptOptionsByYear = useMemo(() => buildAttemptOptionsByYear(scores), [scores]);
+
+  const attemptOptionsForViewYear = useMemo(() => {
+    if (!viewYear) return [];
+    const options = attemptOptionsByYear.get(String(viewYear));
+    return Array.isArray(options) ? options : [];
+  }, [attemptOptionsByYear, viewYear]);
+
+  useEffect(() => {
+    if (!viewYear) return;
+    const options = attemptOptionsByYear.get(String(viewYear));
+    if (!options || !options.length) {
+      if (viewAttempt !== '1') {
+        setViewAttempt('1');
+      }
+      return;
+    }
+    if (!options.includes(Number(viewAttempt))) {
+      setViewAttempt(String(options[0]));
+    }
+  }, [attemptOptionsByYear, viewAttempt, viewYear]);
+
   // 選択カテゴリに応じた科目一覧
   const filteredSubjects = useMemo(() => {
     if (!category) return [];
@@ -128,14 +193,22 @@ const ScoresRadarByYear = () => {
       setFormError(`得点は0〜${selectedFullScore}の範囲で入力してください。`);
       return;
     }
+    const numericAttempt = Number(attempt);
+    if (!Number.isInteger(numericAttempt) || numericAttempt < 1) {
+      setFormError('演習回数は1以上の整数で選択してください。');
+      return;
+    }
 
     try {
       setSubmitting(true);
+      const submittedYear = Number(year);
+      const submittedAttempt = numericAttempt;
       // サーバーに登録
       await api.post('/api/scores', {
         subjectId: Number(subjectId),
         score: numericScore,
-        year: Number(year)
+        year: submittedYear,
+        attemptNumber: submittedAttempt,
       });
 
       // 最新の自分のスコアを再取得（即時反映）
@@ -146,8 +219,28 @@ const ScoresRadarByYear = () => {
       // 年度候補を更新
       const ys = Array.from(new Set(list.map(s => s.year))).sort();
       setYears(ys);
-      // ビューの年度が未設定なら最新に
-      if (!viewYear && ys.length) setViewYear(String(ys[ys.length - 1]));
+      const attemptMap = buildAttemptOptionsByYear(list);
+
+      const submittedYearKey = String(submittedYear);
+      if (ys.includes(submittedYear)) {
+        setViewYear(submittedYearKey);
+        const submittedAttemptOptions = attemptMap.get(submittedYearKey) || [];
+        if (submittedAttemptOptions.includes(submittedAttempt)) {
+          setViewAttempt(String(submittedAttempt));
+        } else if (submittedAttemptOptions.length) {
+          setViewAttempt(String(submittedAttemptOptions[0]));
+        } else {
+          setViewAttempt('1');
+        }
+      } else if (ys.length) {
+        const latest = ys[ys.length - 1];
+        const latestKey = String(latest);
+        setViewYear(latestKey);
+        const attemptsForLatest = attemptMap.get(latestKey);
+        setViewAttempt(String((attemptsForLatest && attemptsForLatest[0]) || 1));
+      } else {
+        setViewAttempt('1');
+      }
 
       // フォームは得点だけリセット（連続入力が楽なように）
       setScore('');
@@ -163,8 +256,15 @@ const ScoresRadarByYear = () => {
   const { indicator, data } = useMemo(() => {
     if (!scores.length || !viewYear) return { indicator: [], data: [] };
 
-    // 表示年度のスコア
-    const inYear = scores.filter(s => String(s.year) === String(viewYear));
+    const attemptNumberForChart = Number(viewAttempt) || 1;
+
+    // 表示年度 + 演習回のスコア
+    const inYear = scores.filter(s => {
+      if (!s) return false;
+      if (String(s.year) !== String(viewYear)) return false;
+      const attemptValue = Number(s.attemptNumber ?? 1);
+      return (Number.isNaN(attemptValue) ? 1 : attemptValue) === attemptNumberForChart;
+    });
     if (!inYear.length) return { indicator: [], data: [] };
 
     const fallbackNameMap = new Map(scoreSubjectNameMap);
@@ -227,13 +327,15 @@ const ScoresRadarByYear = () => {
     });
 
     return { indicator, data: percentValues };
-  }, [scores, viewYear, subjects, subjectLookup, scoreSubjectNameMap, subjectFullScoreMap]);
+  }, [scores, viewYear, viewAttempt, subjects, subjectLookup, scoreSubjectNameMap, subjectFullScoreMap]);
 
   const stroke = '#3BAFDA';
   const fill   = 'rgba(59,175,218,0.18)';
 
+  const attemptLabel = formatAttemptLabel(Number(viewAttempt) || 1);
+
   const chartOption = {
-    title: { text: `年度別 ${viewYear || '-'}` },
+    title: { text: `年度別 ${viewYear || '-'}年 ${attemptLabel}` },
     tooltip: {},
     radar: {
       indicator,
@@ -295,6 +397,17 @@ const ScoresRadarByYear = () => {
               <option value={viewYear}>{viewYear}</option>
             )}
           </select>
+          <select value={viewAttempt} onChange={e => setViewAttempt(e.target.value)}>
+            {attemptOptionsForViewYear.length ? (
+              attemptOptionsForViewYear.map((attemptValue) => (
+                <option key={attemptValue} value={attemptValue}>
+                  {formatAttemptLabel(attemptValue)}
+                </option>
+              ))
+            ) : (
+              <option value="1">{formatAttemptLabel(1)}</option>
+            )}
+          </select>
         </div>
         
       </section>
@@ -310,6 +423,18 @@ const ScoresRadarByYear = () => {
               onChange={e => setYear(e.target.value)}
               placeholder={new Date().getFullYear()}
             />
+          </label>
+
+          <label className="form-field">
+            <span>演習回数</span>
+            <select
+              value={attempt}
+              onChange={e => setAttempt(e.target.value)}
+            >
+              {DEFAULT_ATTEMPT_OPTIONS.map(value => (
+                <option key={value} value={String(value)}>{formatAttemptLabel(value)}</option>
+              ))}
+            </select>
           </label>
 
           <label className="form-field">

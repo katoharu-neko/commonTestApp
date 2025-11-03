@@ -106,6 +106,10 @@ public class ScoreController {
         @NotNull(message = "年度は必須です")
         private Integer year;
 
+        @Min(value = 1, message = "演習回数は1以上で入力してください")
+        @Max(value = 99, message = "演習回数が大きすぎます")
+        private Integer attemptNumber = 1;
+
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
         public Integer getSubjectId() { return subjectId; }
@@ -114,6 +118,8 @@ public class ScoreController {
         public void setScore(Integer score) { this.score = score; }
         public Integer getYear() { return year; }
         public void setYear(Integer year) { this.year = year; }
+        public Integer getAttemptNumber() { return attemptNumber; }
+        public void setAttemptNumber(Integer attemptNumber) { this.attemptNumber = attemptNumber; }
     }
 
     // ====== API ======
@@ -197,6 +203,11 @@ public class ScoreController {
         s.setSubjectId(subject.getId());
         s.setScore(req.getScore());
         s.setYear(req.getYear());
+        Integer attemptNumber = req.getAttemptNumber() != null ? req.getAttemptNumber() : 1;
+        if (attemptNumber < 1) {
+            throw new BadRequestException("演習回数は1以上で入力してください。");
+        }
+        s.setAttemptNumber(attemptNumber);
         // createdAt はエンティティ側の @PrePersist などで自動付与しているなら省略
 
         Score saved = scoreRepository.save(s);
@@ -244,6 +255,7 @@ public class ScoreController {
                 subjectName,
                 score.getScore(),
                 score.getYear(),
+                score.getAttemptNumber(),
                 score.getCreatedAt()
         );
     }
@@ -255,16 +267,18 @@ public class ScoreController {
         private final String subjectName;
         private final Integer score;
         private final Integer year;
+        private final Integer attemptNumber;
         private final LocalDateTime createdAt;
 
         public ScoreResponse(Long id, Long userId, Integer subjectId, String subjectName,
-                              Integer score, Integer year, LocalDateTime createdAt) {
+                              Integer score, Integer year, Integer attemptNumber, LocalDateTime createdAt) {
             this.id = id;
             this.userId = userId;
             this.subjectId = subjectId;
             this.subjectName = subjectName;
             this.score = score;
             this.year = year;
+            this.attemptNumber = attemptNumber;
             this.createdAt = createdAt;
         }
 
@@ -274,6 +288,7 @@ public class ScoreController {
         public String getSubjectName() { return subjectName; }
         public Integer getScore() { return score; }
         public Integer getYear() { return year; }
+        public Integer getAttemptNumber() { return attemptNumber; }
         public LocalDateTime getCreatedAt() { return createdAt; }
     }
 
