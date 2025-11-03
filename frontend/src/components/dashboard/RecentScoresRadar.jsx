@@ -58,12 +58,26 @@ const RecentScoresRadar = () => {
   const fullScoreMap = useMemo(() => {
     const map = new Map();
     subjects.forEach((subject) => {
-      if (subject?.name) {
-        map.set(subject.name, subject.fullScore || MAX_PERCENT);
+      if (!subject) return;
+      if (subject.id !== undefined && subject.id !== null) {
+        map.set(String(subject.id), subject.fullScore ?? MAX_PERCENT);
+      }
+      if (subject.name && !map.has(subject.name)) {
+        map.set(subject.name, subject.fullScore ?? MAX_PERCENT);
       }
     });
     return map;
   }, [subjects]);
+
+  const scoreSubjectNameMap = useMemo(() => {
+    const map = new Map();
+    scores.forEach((item) => {
+      if (item && item.subjectId !== undefined && item.subjectId !== null && item.subjectName) {
+        map.set(String(item.subjectId), item.subjectName);
+      }
+    });
+    return map;
+  }, [scores]);
 
   const subjectLookup = useMemo(() => {
     return createSubjectLookup(subjects);
@@ -114,25 +128,48 @@ const RecentScoresRadar = () => {
         .flatMap((year) => groupedByYear.get(year) ?? [])
         .sort((a, b) => {
           if (a.year !== b.year) return Number(a.year) - Number(b.year);
-          return String(a.subject).localeCompare(String(b.subject));
+          const keyA = a.subjectId ?? a.subjectName ?? a.subject;
+          const keyB = b.subjectId ?? b.subjectName ?? b.subject;
+          const labelA = getSubjectDisplayName(keyA, subjectLookup) || a.subjectName || a.subject || '';
+          const labelB = getSubjectDisplayName(keyB, subjectLookup) || b.subjectName || b.subject || '';
+          return labelA.localeCompare(labelB, 'ja');
         });
 
       if (!dataRows.length) return;
 
       const subjectsSet = new Set();
       dataRows.forEach((row) => {
-        if (row?.subject) subjectsSet.add(row.subject);
+        if (!row) return;
+        if (row.subjectId !== undefined && row.subjectId !== null) {
+          subjectsSet.add(row.subjectId);
+        } else if (row.subjectName) {
+          subjectsSet.add(row.subjectName);
+        } else if (row.subject) {
+          subjectsSet.add(row.subject);
+        }
       });
 
       const subjectList = sortSubjectNamesByCategory(Array.from(subjectsSet), subjectLookup);
 
       if (!subjectList.length) return;
 
-      const values = subjectList.map((subjectName) => {
-        const rows = dataRows.filter((row) => row.subject === subjectName);
+      const values = subjectList.map((subjectKey) => {
+        const rows = dataRows.filter((row) => {
+          if (!row) return false;
+          if (row.subjectId !== undefined && row.subjectId !== null) {
+            if (String(row.subjectId) === String(subjectKey)) return true;
+          }
+          const fallback = row.subjectName ?? row.subject;
+          return fallback === subjectKey;
+        });
         if (!rows.length) return 0;
 
-        const fullScore = fullScoreMap.get(subjectName) || MAX_PERCENT;
+        const keyString = String(subjectKey);
+        let fullScore = fullScoreMap.get(keyString);
+        if (fullScore === undefined) {
+          const subject = subjectLookup.get(keyString) || (typeof subjectKey === 'string' ? subjectLookup.get(subjectKey) : undefined);
+          fullScore = subject?.fullScore ?? MAX_PERCENT;
+        }
 
         const avg =
           rows.reduce((sum, row) => sum + Number(row.score || 0), 0) / rows.length;
@@ -141,8 +178,11 @@ const RecentScoresRadar = () => {
         return Math.round(capped * 10) / 10;
       });
 
-      const indicator = subjectList.map((name) => ({
-        name: getSubjectDisplayName(name, subjectLookup),
+      const indicator = subjectList.map((key) => ({
+        name:
+          getSubjectDisplayName(key, subjectLookup)
+          || scoreSubjectNameMap.get(String(key))
+          || (typeof key === 'string' ? key : `科目ID:${key}`),
         max: MAX_PERCENT,
       }));
 
@@ -191,7 +231,7 @@ const RecentScoresRadar = () => {
     });
 
     return configs;
-  }, [yearOptions, groupedByYear, fullScoreMap, subjectLookup]);
+  }, [yearOptions, groupedByYear, fullScoreMap, subjectLookup, scoreSubjectNameMap]);
 
   if (loading) {
     return [

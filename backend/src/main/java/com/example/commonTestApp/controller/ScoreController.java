@@ -1,9 +1,14 @@
 package com.example.commonTestApp.controller;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.time.Year;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +25,15 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.commonTestApp.entity.Score;
+import com.example.commonTestApp.entity.Subject;
 import com.example.commonTestApp.entity.User;
 import com.example.commonTestApp.repository.ScoreRepository;
+import com.example.commonTestApp.repository.SubjectRepository;
 import com.example.commonTestApp.repository.UserRepository;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
@@ -37,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 public class ScoreController {
 
     private final ScoreRepository scoreRepository;
+    private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
 
     // ====== ヘルパー ======
@@ -88,8 +95,8 @@ public class ScoreController {
          */
         private Long userId;
 
-        @NotBlank(message = "科目は必須です")
-        private String subject;
+        @NotNull(message = "科目は必須です")
+        private Integer subjectId;
 
         @NotNull(message = "得点は必須です")
         @Min(value = 0, message = "得点は0以上")
@@ -101,8 +108,8 @@ public class ScoreController {
 
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
-        public String getSubject() { return subject; }
-        public void setSubject(String subject) { this.subject = subject; }
+        public Integer getSubjectId() { return subjectId; }
+        public void setSubjectId(Integer subjectId) { this.subjectId = subjectId; }
         public Integer getScore() { return score; }
         public void setScore(Integer score) { this.score = score; }
         public Integer getYear() { return year; }
@@ -115,44 +122,44 @@ public class ScoreController {
      * スコア一覧（管理者のみ）
      */
     @GetMapping
-    public List<Score> getAllScores(Authentication auth) {
+    public List<ScoreResponse> getAllScores(Authentication auth) {
         if (!hasRole(auth, "ROLE_ADMIN")) {
             throw new ForbiddenException("管理者のみ閲覧できます。");
         }
-        return scoreRepository.findAll();
+        return toResponseList(scoreRepository.findAll());
     }
 
     /**
      * 自分のスコア一覧（ログイン必須）
      */
     @GetMapping("/me")
-    public List<Score> getMyScores(Principal principal) {
+    public List<ScoreResponse> getMyScores(Principal principal) {
         User me = requireLoginUser(principal);
-        return scoreRepository.findByUserId(me.getId());
+        return toResponseList(scoreRepository.findByUserId(me.getId()));
     }
 
     /**
      * ユーザー別スコア（ADMIN/EDUCATOR は任意ユーザー、GENERAL は自分のみ）
      */
     @GetMapping("/user/{userId}")
-    public List<Score> getUserScores(@PathVariable Long userId, Principal principal, Authentication auth) {
+    public List<ScoreResponse> getUserScores(@PathVariable Long userId, Principal principal, Authentication auth) {
         User me = requireLoginUser(principal);
         assertCanViewUser(auth, userId, me.getId());
-        return scoreRepository.findByUserId(userId);
+        return toResponseList(scoreRepository.findByUserId(userId));
     }
 
     /**
      * ユーザー別 + 年度絞り（権限ルールは上と同じ）
      */
     @GetMapping("/user/{userId}/year/{year}")
-    public List<Score> getUserScoresByYear(@PathVariable Long userId,
+    public List<ScoreResponse> getUserScoresByYear(@PathVariable Long userId,
                                            @PathVariable Integer year,
                                            Principal principal,
                                            Authentication auth) {
         User me = requireLoginUser(principal);
         assertCanViewUser(auth, userId, me.getId());
         validateYear(year);
-        return scoreRepository.findByUserIdAndYear(userId, year);
+        return toResponseList(scoreRepository.findByUserIdAndYear(userId, year));
     }
 
     /**
@@ -161,7 +168,7 @@ public class ScoreController {
      * EDUCATOR/ADMIN: 任意ユーザー宛OK
      */
     @PostMapping
-    public ResponseEntity<Score> registerScore(@Valid @RequestBody CreateScoreRequest req,
+    public ResponseEntity<ScoreResponse> registerScore(@Valid @RequestBody CreateScoreRequest req,
                                                Principal principal,
                                                Authentication auth) {
         User me = requireLoginUser(principal);
@@ -177,16 +184,97 @@ public class ScoreController {
         // 年度チェック
         validateYear(req.getYear());
 
-        // ここではシンプルに Score を保存（科目は文字列、得点は素点）
+        if (req.getSubjectId() == null) {
+            throw new BadRequestException("科目は必須です。");
+        }
+
+        Subject subject = subjectRepository.findById(req.getSubjectId())
+                .orElseThrow(() -> new BadRequestException("指定された科目が存在しません。"));
+
+        // ここではシンプルに Score を保存（科目はIDで紐付け、得点は素点）
         Score s = new Score();
         s.setUserId(targetUser.getId());
-        s.setSubject(req.getSubject().trim());
+        s.setSubjectId(subject.getId());
         s.setScore(req.getScore());
         s.setYear(req.getYear());
         // createdAt はエンティティ側の @PrePersist などで自動付与しているなら省略
 
         Score saved = scoreRepository.save(s);
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(toResponse(saved, Map.of(subject.getId(), subject)));
+    }
+
+    private List<ScoreResponse> toResponseList(List<Score> scores) {
+        if (scores == null || scores.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Integer> subjectIds = scores.stream()
+                .map(Score::getSubjectId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Integer, Subject> subjectMap = subjectIds.isEmpty()
+                ? Collections.emptyMap()
+                : subjectRepository.findAllById(subjectIds).stream()
+                    .collect(Collectors.toMap(Subject::getId, s -> s));
+
+        return scores.stream()
+                .map(score -> toResponse(score, subjectMap))
+                .collect(Collectors.toList());
+    }
+
+    private ScoreResponse toResponse(Score score, Map<Integer, Subject> subjectMap) {
+        Subject subject = null;
+        if (subjectMap != null && score.getSubjectId() != null) {
+            subject = subjectMap.get(score.getSubjectId());
+        }
+        if (subject == null) {
+            subject = score.getSubject();
+        }
+        if (subject == null && score.getSubjectId() != null) {
+            subject = subjectRepository.findById(score.getSubjectId()).orElse(null);
+        }
+        String subjectName = subject != null ? subject.getName() : null;
+
+        return new ScoreResponse(
+                score.getId(),
+                score.getUserId(),
+                score.getSubjectId(),
+                subjectName,
+                score.getScore(),
+                score.getYear(),
+                score.getCreatedAt()
+        );
+    }
+
+    public static class ScoreResponse {
+        private final Long id;
+        private final Long userId;
+        private final Integer subjectId;
+        private final String subjectName;
+        private final Integer score;
+        private final Integer year;
+        private final LocalDateTime createdAt;
+
+        public ScoreResponse(Long id, Long userId, Integer subjectId, String subjectName,
+                              Integer score, Integer year, LocalDateTime createdAt) {
+            this.id = id;
+            this.userId = userId;
+            this.subjectId = subjectId;
+            this.subjectName = subjectName;
+            this.score = score;
+            this.year = year;
+            this.createdAt = createdAt;
+        }
+
+        public Long getId() { return id; }
+        public Long getUserId() { return userId; }
+        public Integer getSubjectId() { return subjectId; }
+        public String getSubjectName() { return subjectName; }
+        public Integer getScore() { return score; }
+        public Integer getYear() { return year; }
+        public LocalDateTime getCreatedAt() { return createdAt; }
     }
 
     // ====== 例外ハンドリング（簡易） ======
