@@ -201,6 +201,8 @@ const RecentScoresRadar = () => {
           tooltip: {},
           radar: {
             indicator,
+            startAngle: 90,
+            clockwise: true,
             name: {
               color: '#0f172a',
               fontSize: 13,

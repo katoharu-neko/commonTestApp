@@ -246,7 +246,13 @@ public class ScoreController {
         if (subject == null && score.getSubjectId() != null) {
             subject = subjectRepository.findById(score.getSubjectId()).orElse(null);
         }
-        String subjectName = subject != null ? subject.getName() : null;
+        String subjectName = null;
+        if (subject != null) {
+            subjectName = subject.getShortName();
+            if (subjectName == null || subjectName.isBlank()) {
+                subjectName = subject.getName();
+            }
+        }
 
         return new ScoreResponse(
                 score.getId(),

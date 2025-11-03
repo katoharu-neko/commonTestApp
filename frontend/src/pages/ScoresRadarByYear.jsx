@@ -339,6 +339,8 @@ const ScoresRadarByYear = () => {
     tooltip: {},
     radar: {
       indicator,
+      startAngle: 90,
+      clockwise: true,
       axisName: { color: '#111' }
     },
     series: [
