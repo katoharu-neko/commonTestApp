@@ -121,22 +121,11 @@ const RecentScoresRadar = () => {
   const comboOptions = useMemo(() => {
     if (!sortedCombos.length) return [];
 
-    const primary = sortedCombos.slice(0, 3).map((combo) => ({
+    return sortedCombos.map((combo) => ({
       key: `${combo.year}-${combo.attempt}`,
       label: `${combo.year}年 ${formatAttemptLabel(combo.attempt)}`,
       rows: combo.rows.slice(),
     }));
-
-    const others = sortedCombos.slice(3);
-    if (others.length) {
-      primary.push({
-        key: 'others',
-        label: 'それ以前',
-        rows: others.flatMap((entry) => entry.rows),
-      });
-    }
-
-    return primary;
   }, [sortedCombos]);
 
   const cardConfigs = useMemo(() => {
@@ -243,8 +232,7 @@ const RecentScoresRadar = () => {
               data: [
                 {
                   value: values,
-                  name:
-                    option.key === 'others' ? '平均（それ以前）' : `${option.label} 平均`,
+                  name: `${option.label} 平均`,
                   areaStyle: { color: 'rgba(59,130,246,0.25)' },
                   lineStyle: { color: '#2563eb', width: 2 },
                   itemStyle: { color: '#2563eb' },
