@@ -42,6 +42,9 @@ public class Score {
 
     private Integer score;
 
+    @Column(name = "attempt_number", nullable = false)
+    private Integer attemptNumber = 1;
+
     private Integer year; // 例：2025年共通テストなど
 
     private LocalDateTime createdAt = LocalDateTime.now();
