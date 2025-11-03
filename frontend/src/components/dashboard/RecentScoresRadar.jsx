@@ -12,6 +12,15 @@ const MAX_PERCENT = 100;
 
 const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
 
+const formatTotalValue = (value) => {
+  if (!Number.isFinite(value)) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  const formatOptions = Number.isInteger(rounded)
+    ? { maximumFractionDigits: 0 }
+    : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+  return new Intl.NumberFormat('ja-JP', formatOptions).format(rounded);
+};
+
 const RecentScoresRadar = () => {
   const [scores, setScores] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -164,6 +173,9 @@ const RecentScoresRadar = () => {
 
         if (!subjectList.length) return null;
 
+        let totalScore = 0;
+        let totalFullScore = 0;
+
         const values = subjectList.map((subjectKey) => {
           const rows = dataRows.filter((row) => {
             if (!row) return false;
@@ -178,13 +190,21 @@ const RecentScoresRadar = () => {
           const keyString = String(subjectKey);
           let fullScore = fullScoreMap.get(keyString);
           if (fullScore === undefined) {
-            const subject = subjectLookup.get(keyString) || (typeof subjectKey === 'string' ? subjectLookup.get(subjectKey) : undefined);
+            const subject = subjectLookup.get(keyString)
+              || (typeof subjectKey === 'string' ? subjectLookup.get(subjectKey) : undefined);
             fullScore = subject?.fullScore ?? MAX_PERCENT;
           }
 
+          const normalizedFullScore = Number.isFinite(fullScore) && fullScore > 0 ? fullScore : MAX_PERCENT;
+
           const avg =
             rows.reduce((sum, row) => sum + Number(row.score || 0), 0) / rows.length;
-          const percent = fullScore > 0 ? (avg / fullScore) * 100 : 0;
+          const safeAverage = Number.isFinite(avg) ? avg : 0;
+
+          totalScore += safeAverage;
+          totalFullScore += normalizedFullScore;
+
+          const percent = normalizedFullScore > 0 ? (safeAverage / normalizedFullScore) * 100 : 0;
           const capped = Math.min(Math.max(percent, 0), MAX_PERCENT);
           return Math.round(capped * 10) / 10;
         });
@@ -236,10 +256,15 @@ const RecentScoresRadar = () => {
           ],
         };
 
+        const normalizedTotalScore = Math.round(totalScore * 10) / 10;
+        const normalizedTotalFullScore = Math.round(totalFullScore * 10) / 10;
+
         return {
           key: option.key,
           label: option.label,
           chartOption,
+          totalScore: normalizedTotalScore,
+          totalFullScore: normalizedTotalFullScore,
         };
       })
       .filter(Boolean);
@@ -286,6 +311,12 @@ const RecentScoresRadar = () => {
         <div className="recent-scores-card__header">
           <span className="recent-scores-card__label">直近のテスト結果</span>
           <h2 className="recent-scores-card__title">{config.label}</h2>
+        </div>
+        <div className="chart-score-summary">
+          <span className="chart-score-summary__label">取得点数の合計点 / 満点の合計</span>
+          <span className="chart-score-summary__value">
+            {formatTotalValue(config.totalScore)} / {formatTotalValue(config.totalFullScore)}
+          </span>
         </div>
         <ReactECharts option={config.chartOption} style={{ width: '100%', height: 320 }} />
       </div>

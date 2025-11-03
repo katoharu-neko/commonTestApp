@@ -41,6 +41,15 @@ const buildAttemptOptionsByYear = (scoresList) => {
 
 const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
 
+const formatTotalValue = (value) => {
+  if (!Number.isFinite(value)) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  const formatOptions = Number.isInteger(rounded)
+    ? { maximumFractionDigits: 0 }
+    : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+  return new Intl.NumberFormat('ja-JP', formatOptions).format(rounded);
+};
+
 // 入力フォーム + 年度別レーダーチャート（得点率%表示）
 // subjectsテーブルと連携し、カテゴリ→科目の絞り込みが可能
 const ScoresRadarByYear = () => {
@@ -253,8 +262,10 @@ const ScoresRadarByYear = () => {
   };
 
   // ---- チャート用データ（年度別、％で表示） ----
-  const { indicator, data } = useMemo(() => {
-    if (!scores.length || !viewYear) return { indicator: [], data: [] };
+  const { indicator, data, totalScore, totalFullScore } = useMemo(() => {
+    if (!scores.length || !viewYear) {
+      return { indicator: [], data: [], totalScore: 0, totalFullScore: 0 };
+    }
 
     const attemptNumberForChart = Number(viewAttempt) || 1;
 
@@ -265,7 +276,9 @@ const ScoresRadarByYear = () => {
       const attemptValue = Number(s.attemptNumber ?? 1);
       return (Number.isNaN(attemptValue) ? 1 : attemptValue) === attemptNumberForChart;
     });
-    if (!inYear.length) return { indicator: [], data: [] };
+    if (!inYear.length) {
+      return { indicator: [], data: [], totalScore: 0, totalFullScore: 0 };
+    }
 
     const fallbackNameMap = new Map(scoreSubjectNameMap);
 
@@ -285,7 +298,9 @@ const ScoresRadarByYear = () => {
       }
     });
 
-    if (!subjectKeys.size) return { indicator: [], data: [] };
+    if (!subjectKeys.size) {
+      return { indicator: [], data: [], totalScore: 0, totalFullScore: 0 };
+    }
 
     const sortedSubjectKeys = sortSubjectNamesByCategory(Array.from(subjectKeys), subjectLookup);
 
@@ -309,6 +324,9 @@ const ScoresRadarByYear = () => {
 
     const indicator = subjectsForChart.map(item => ({ name: item.displayName, max: 100 }));
 
+    let totalScoreSum = 0;
+    let totalFullScoreSum = 0;
+
     const percentValues = subjectsForChart.map(item => {
       const items = inYear.filter(entry => {
         if (!entry) return false;
@@ -321,12 +339,26 @@ const ScoresRadarByYear = () => {
       if (!items.length) return 0;
 
       const last = items[items.length - 1];
+      const rawScore = Number(last?.score ?? 0);
+      const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
       const full = item.fullScore > 0 ? item.fullScore : 100;
-      const pct = full > 0 ? (Number(last?.score || 0) / full) * 100 : 0;
+
+      totalScoreSum += scoreValue;
+      totalFullScoreSum += full;
+
+      const pct = full > 0 ? (scoreValue / full) * 100 : 0;
       return Math.round(pct * 10) / 10;
     });
 
-    return { indicator, data: percentValues };
+    const normalizedScore = Math.round(totalScoreSum * 10) / 10;
+    const normalizedFullScore = Math.round(totalFullScoreSum * 10) / 10;
+
+    return {
+      indicator,
+      data: percentValues,
+      totalScore: normalizedScore,
+      totalFullScore: normalizedFullScore,
+    };
   }, [scores, viewYear, viewAttempt, subjects, subjectLookup, scoreSubjectNameMap, subjectFullScoreMap]);
 
   const stroke = '#3BAFDA';
@@ -381,7 +413,15 @@ const ScoresRadarByYear = () => {
       <section className="card scores-page__chart">
         <div className="scores-chart-wrapper">
           {indicator.length ? (
-            <ReactECharts option={chartOption} style={chartStyle} notMerge />
+            <>
+              <div className="chart-score-summary">
+                <span className="chart-score-summary__label">取得点数の合計点 / 満点の合計</span>
+                <span className="chart-score-summary__value">
+                  {formatTotalValue(totalScore)} / {formatTotalValue(totalFullScore)}
+                </span>
+              </div>
+              <ReactECharts option={chartOption} style={chartStyle} notMerge />
+            </>
           ) : (
             <p className="status-message">表示できるデータがありません。</p>
           )}
