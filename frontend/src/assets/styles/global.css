@@ -144,6 +144,31 @@ textarea {
   font-size: 12px;
 }
 
+.chart-score-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: fit-content;
+}
+
+.chart-score-summary__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.02em;
+}
+
+.chart-score-summary__value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.recent-scores-card--chart .chart-score-summary {
+  gap: 6px;
+}
+
 @media (max-width: 900px) {
   .recent-scores-card__title {
     font-size: 22px;
@@ -549,6 +574,10 @@ textarea {
 
 .scores-chart-wrapper {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 .scores-form-grid {
