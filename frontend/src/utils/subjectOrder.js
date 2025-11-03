@@ -3,6 +3,17 @@ function normalizeKey(value) {
   return String(value);
 }
 
+function resolveSubjectShortName(subject) {
+  if (!subject) return null;
+  if (subject.shortName && typeof subject.shortName === 'string') {
+    return subject.shortName;
+  }
+  if (subject.short_name && typeof subject.short_name === 'string') {
+    return subject.short_name;
+  }
+  return null;
+}
+
 function createSubjectLookup(subjects) {
   const map = new Map();
   if (!Array.isArray(subjects)) return map;
@@ -15,8 +26,9 @@ function createSubjectLookup(subjects) {
     if (subject.name) {
       map.set(subject.name, subject);
     }
-    if (subject.short_name) {
-      const shortKey = normalizeKey(subject.short_name);
+    const shortName = resolveSubjectShortName(subject);
+    if (shortName) {
+      const shortKey = normalizeKey(shortName);
       if (shortKey !== null && !map.has(shortKey)) {
         map.set(shortKey, subject);
       }
@@ -37,23 +49,25 @@ function sortSubjectNamesByCategory(subjectNames, subjectLookup) {
       ? subjectLookup.get(key)
       : undefined;
     const resolved = subject || fallbackSubject;
-    const id = resolved && typeof resolved.id === 'number'
-      ? resolved.id
-      : Number.POSITIVE_INFINITY;
+    let id = Number.POSITIVE_INFINITY;
+    if (resolved && typeof resolved.id === 'number') {
+      id = resolved.id;
+    } else if (normalized !== null) {
+      const numericId = Number(normalized);
+      if (Number.isFinite(numericId)) {
+        id = numericId;
+      }
+    }
     return { key, id, subject: resolved };
   });
 
   const localeComparator = function (a, b) {
-    const labelA = a.subject && a.subject.short_name
-      ? a.subject.short_name
-      : a.subject && a.subject.name
-        ? a.subject.name
-        : a.key;
-    const labelB = b.subject && b.subject.short_name
-      ? b.subject.short_name
-      : b.subject && b.subject.name
-        ? b.subject.name
-        : b.key;
+    const labelA = a.subject
+      ? (resolveSubjectShortName(a.subject) || a.subject.name || a.key)
+      : a.key;
+    const labelB = b.subject
+      ? (resolveSubjectShortName(b.subject) || b.subject.name || b.key)
+      : b.key;
     return String(labelA).localeCompare(String(labelB), 'ja');
   };
 
@@ -76,7 +90,8 @@ function getSubjectDisplayName(subjectKey, subjectLookup) {
   if (!subject && typeof subjectKey === 'string') {
     subject = subjectLookup.get(subjectKey);
   }
-  if (subject && subject.short_name) return subject.short_name;
+  const shortName = resolveSubjectShortName(subject);
+  if (shortName) return shortName;
   if (subject && subject.name) return subject.name;
   if (typeof subjectKey === 'string') return subjectKey;
   return '';
