@@ -98,7 +98,7 @@ function Navbar() {
         },
         {
           key: 'chart',
-          label: 'チャート表示入力画面',
+          label: '成績スコア',
           icon: chartIcon,
           onClick: function () {
             handleMenuNavigate('/scores/radar/year');
