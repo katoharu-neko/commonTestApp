@@ -653,40 +653,55 @@ textarea {
   cursor: default;
 }
 
-.scores-history {
+.scores-carousel {
   display: grid;
   gap: 18px;
 }
 
-.scores-history__list {
-  --history-card-width: clamp(260px, 78vw, 360px);
+.scores-carousel__track {
+  --scores-card-width: clamp(280px, 84vw, 420px);
   display: flex;
   gap: 22px;
   overflow-x: auto;
-  padding: 8px max(16px, calc((100% - var(--history-card-width)) / 2));
+  padding: 8px max(16px, calc((100% - var(--scores-card-width)) / 2));
   scroll-snap-type: x mandatory;
-  scroll-padding-inline: max(16px, calc((100% - var(--history-card-width)) / 2));
+  scroll-padding-inline: max(16px, calc((100% - var(--scores-card-width)) / 2));
   -webkit-overflow-scrolling: touch;
 }
 
-.scores-card--history {
+.scores-carousel__track::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scores-card--timeline {
   cursor: pointer;
   border: 1px solid rgba(148, 163, 184, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  flex: 0 0 var(--history-card-width);
-  max-width: var(--history-card-width);
+  flex: 0 0 var(--scores-card-width);
+  max-width: min(var(--scores-card-width), 100%);
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
 
-.scores-card--history:hover {
+.scores-card--timeline:hover {
   transform: translateY(-4px);
   box-shadow: 0 28px 56px rgba(15, 23, 42, 0.18);
 }
 
-.scores-card--history:focus-visible {
+.scores-card--timeline:focus-visible {
   outline: 3px solid rgba(37, 99, 235, 0.45);
   outline-offset: 4px;
+}
+
+@media (max-width: 480px) {
+  .scores-carousel__track {
+    --scores-card-width: clamp(260px, 92vw, 360px);
+  }
+}
+
+.scores-empty {
+  display: flex;
+  justify-content: center;
 }
 
 .scores-card--active {

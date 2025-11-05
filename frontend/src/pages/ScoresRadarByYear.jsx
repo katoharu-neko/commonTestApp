@@ -439,32 +439,7 @@ const ScoresRadarByYear = () => {
   };
 
   // ---- チャート用データ（年度別、％で表示） ----
-  const radarDataset = useMemo(
-    function () {
-      return buildRadarDataset(
-        scores,
-        viewYear,
-        viewAttempt,
-        subjectLookup,
-        subjectFullScoreMap,
-        scoreSubjectNameMap
-      );
-    },
-    [scores, viewYear, viewAttempt, subjectLookup, subjectFullScoreMap, scoreSubjectNameMap]
-  );
-
-  const currentChartOption = useMemo(
-    function () {
-      return createRadarChartOption(radarDataset.indicator, radarDataset.data);
-    },
-    [radarDataset.indicator, radarDataset.data]
-  );
-
-  const chartStyle = { height: 'clamp(260px, 55vw, 420px)', width: '100%' };
-  const historyChartStyle = { height: 'clamp(240px, 60vw, 360px)', width: '100%' };
-
-  const currentAttemptNumber = Number(viewAttempt) || 1;
-  const attemptLabel = formatAttemptLabel(currentAttemptNumber);
+  const cardChartStyle = { height: 'clamp(240px, 62vw, 380px)', width: '100%' };
 
   const historyCards = useMemo(
     function () {
@@ -525,7 +500,7 @@ const ScoresRadarByYear = () => {
     setInputOpen(false);
   };
 
-  const hasCurrentData = radarDataset.indicator.length > 0;
+  const hasCards = historyCards.length > 0;
 
   // ---- UI ----
   return (
@@ -533,51 +508,16 @@ const ScoresRadarByYear = () => {
       {loadingInit && <p className="scores-page__alert">読み込み中...</p>}
       {initError && <p className="scores-page__alert form-error">{initError}</p>}
 
-      <section className="scores-card scores-card--current card">
-        <header className="scores-card__header">
-          <div className="scores-card__titles">
-            <p className="scores-card__period">
-              {viewYear ? `${viewYear}年度${attemptLabel}` : '年度データなし'}
-            </p>
-            <p className="scores-card__total">
-              <span className="scores-card__total-label">Total</span>
-              <span className="scores-card__total-value">
-                {formatTotalValue(radarDataset.totalScore)}点 / {formatTotalValue(radarDataset.totalFullScore)}点
-              </span>
-            </p>
-          </div>
-        </header>
-
-        {hasCurrentData ? (
-          <div className="scores-card__content">
-            <div className="scores-card__chart">
-              <ReactECharts option={currentChartOption} style={chartStyle} notMerge />
-            </div>
-            <div className="scores-card__comment">
-              <span className="scores-card__comment-label">全体講評</span>
-              <textarea
-                className="scores-card__comment-area"
-                placeholder="ここに全体講評のアドバイスが表示されます。"
-                readOnly
-              />
-            </div>
-          </div>
-        ) : (
-          <p className="status-message">表示できるデータがありません。</p>
-        )}
-      </section>
-
-      <section className="scores-history">
-        <h3 className="section-title">過去の演習結果</h3>
-        {historyCards.length ? (
-          <div className="scores-history__list">
+      {hasCards ? (
+        <section className="scores-carousel">
+          <div className="scores-carousel__track" role="list">
             {historyCards.map(function (card) {
               const isActive = String(card.year) === String(viewYear) && String(card.attemptNumber) === String(viewAttempt);
               const option = createRadarChartOption(card.dataset.indicator, card.dataset.data);
               return (
                 <article
                   key={card.key}
-                  className={'scores-card scores-card--history card' + (isActive ? ' scores-card--active' : '')}
+                  className={'scores-card scores-card--timeline card' + (isActive ? ' scores-card--active' : '')}
                   role="button"
                   tabIndex={0}
                   aria-pressed={isActive}
@@ -602,7 +542,7 @@ const ScoresRadarByYear = () => {
                   </header>
                   <div className="scores-card__content">
                     <div className="scores-card__chart">
-                      <ReactECharts option={option} style={historyChartStyle} notMerge />
+                      <ReactECharts option={option} style={cardChartStyle} notMerge />
                     </div>
                     <div className="scores-card__comment">
                       <span className="scores-card__comment-label">全体講評</span>
@@ -617,10 +557,12 @@ const ScoresRadarByYear = () => {
               );
             })}
           </div>
-        ) : (
-          <p className="status-message">過去の演習データがまだありません。</p>
-        )}
-      </section>
+        </section>
+      ) : (
+        <section className="scores-empty">
+          <p className="status-message">表示できるデータがありません。</p>
+        </section>
+      )}
 
       <div className="score-input-floating">
         <button
