@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import userApi from '../../api/userApi';
-import { clearToken, getToken } from '../../auth';
+import { clearToken, getToken, subscribeTokenChange } from '../../auth';
 
 import logoSvg from '../../assets/images/logo.svg';
 import dashboardIcon from '../../assets/images/menu/dashboard.svg';
@@ -12,11 +12,26 @@ import logoutIcon from '../../assets/images/menu/logout.svg';
 
 function Navbar() {
   const navigate = useNavigate();
-  const isAuthed = !!getToken();
-
+  const [hasToken, setHasToken] = useState(!!getToken());
   const [userName, setUserName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  useEffect(function () {
+    function updateTokenState() {
+      setHasToken(!!getToken());
+    }
+
+    updateTokenState();
+    const unsubscribe = subscribeTokenChange(updateTokenState);
+    return function cleanup() {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  const isAuthed = hasToken;
 
   // ユーザー名取得
   useEffect(function () {
