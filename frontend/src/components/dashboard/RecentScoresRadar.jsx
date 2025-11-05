@@ -10,7 +10,7 @@ import {
 
 const MAX_PERCENT = 100;
 
-const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
+const formatAttemptLabel = (attemptNumber) => `${attemptNumber}回目`;
 
 const formatTotalValue = (value) => {
   if (!Number.isFinite(value)) return '0';

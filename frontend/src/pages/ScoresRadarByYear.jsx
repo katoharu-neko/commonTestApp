@@ -39,7 +39,7 @@ const buildAttemptOptionsByYear = (scoresList) => {
   return normalized;
 };
 
-const formatAttemptLabel = (attemptNumber) => `演習${attemptNumber}回目`;
+const formatAttemptLabel = (attemptNumber) => `${attemptNumber}回目`;
 
 const formatTotalValue = (value) => {
   if (!Number.isFinite(value)) return '0';
@@ -537,7 +537,7 @@ const ScoresRadarByYear = () => {
         <header className="scores-card__header">
           <div className="scores-card__titles">
             <p className="scores-card__period">
-              {viewYear ? `${viewYear}年度 ${attemptLabel}` : '年度データなし'}
+              {viewYear ? `${viewYear}年度${attemptLabel}` : '年度データなし'}
             </p>
             <p className="scores-card__total">
               <span className="scores-card__total-label">Total</span>
@@ -591,7 +591,7 @@ const ScoresRadarByYear = () => {
                 >
                   <header className="scores-card__header">
                     <div className="scores-card__titles">
-                      <p className="scores-card__period">{card.year}年度 {formatAttemptLabel(card.attemptNumber)}</p>
+                      <p className="scores-card__period">{card.year}年度{formatAttemptLabel(card.attemptNumber)}</p>
                       <p className="scores-card__total">
                         <span className="scores-card__total-label">Total</span>
                         <span className="scores-card__total-value">
