@@ -563,10 +563,11 @@ textarea {
   gap: 20px;
 }
 
+
 .scores-card__header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: center;
+  align-items: center;
   gap: 16px;
 }
 
@@ -574,6 +575,8 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  align-items: center;
+  text-align: center;
 }
 
 .scores-card__period {
@@ -587,6 +590,7 @@ textarea {
   margin: 0;
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 10px;
   font-size: 16px;
   color: #1f2937;
@@ -655,15 +659,24 @@ textarea {
 }
 
 .scores-history__list {
-  display: grid;
+  --history-card-width: clamp(260px, 78vw, 360px);
+  display: flex;
   gap: 22px;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  overflow-x: auto;
+  padding: 8px max(16px, calc((100% - var(--history-card-width)) / 2));
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: max(16px, calc((100% - var(--history-card-width)) / 2));
+  -webkit-overflow-scrolling: touch;
 }
 
 .scores-card--history {
   cursor: pointer;
   border: 1px solid rgba(148, 163, 184, 0.24);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  flex: 0 0 var(--history-card-width);
+  max-width: var(--history-card-width);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
 }
 
 .scores-card--history:hover {
@@ -695,34 +708,26 @@ textarea {
   .scores-card__content {
     grid-template-columns: 1fr;
   }
-
-  .scores-history__list {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding: 4px 4px 12px;
-    margin: 0 -4px;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .scores-card--history {
-    flex: 0 0 auto;
-    min-width: clamp(280px, 78vw, 360px);
-    scroll-snap-align: start;
-  }
 }
 
 .score-input-floating {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
   bottom: 24px;
+  transform: translateX(-50%);
+  width: min(100%, 640px);
+  box-sizing: border-box;
   display: flex;
   justify-content: center;
   pointer-events: none;
   z-index: 30;
   padding: 0 16px;
+}
+
+@supports (bottom: calc(env(safe-area-inset-bottom) + 16px)) {
+  .score-input-floating {
+    bottom: calc(env(safe-area-inset-bottom) + 24px);
+  }
 }
 
 .score-input-floating__button {
