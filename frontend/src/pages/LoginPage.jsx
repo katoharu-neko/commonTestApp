@@ -1,8 +1,8 @@
 // src/pages/LoginPage.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import api from '../api/apiClient';
-import { setToken as storeToken } from '../auth';
+import { clearToken, setToken as storeToken } from '../auth';
 
 export default function LoginPage() {
   const nav = useNavigate();
@@ -11,6 +11,10 @@ export default function LoginPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(function () {
+    clearToken();
+  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
