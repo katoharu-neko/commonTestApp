@@ -671,11 +671,11 @@ textarea {
 
 @media (min-width: 1024px) {
   .scores-carousel__track {
-    --scores-card-width: clamp(280px, 28vw, 360px);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     justify-content: center;
-    gap: 24px;
+    align-items: stretch;
+    gap: 28px;
     overflow: visible;
     padding: 12px 0;
     scroll-snap-type: none;
@@ -683,9 +683,9 @@ textarea {
 
   .scores-card--timeline {
     flex: unset;
-    width: min(var(--scores-card-width), 100%);
-    max-width: 360px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
   }
 }
 
