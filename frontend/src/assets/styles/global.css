@@ -12,7 +12,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f3f4f6;
+  background: #f7f9fc;
   color: #111827;
 }
 
@@ -47,29 +47,29 @@ textarea {
   width: 100%;
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 24px 48px;
+  padding: 18px 24px 48px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
 }
 
 @media (max-width: 900px) {
   .app-shell__main {
-    padding: 24px 16px 40px;
-    gap: 24px;
+    padding: 16px 16px 40px;
+    gap: 20px;
   }
 }
 
 @media (max-width: 600px) {
   .app-shell__main {
-    padding: 20px 14px 32px;
-    gap: 20px;
+    padding: 14px 14px 32px;
+    gap: 18px;
   }
 }
 
 .card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 28px;
   box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
 }
@@ -667,6 +667,26 @@ textarea {
   scroll-snap-type: x mandatory;
   scroll-padding-inline: max(16px, calc((100% - var(--scores-card-width)) / 2));
   -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 1024px) {
+  .scores-carousel__track {
+    --scores-card-width: clamp(280px, 28vw, 360px);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    justify-content: center;
+    gap: 24px;
+    overflow: visible;
+    padding: 12px 0;
+    scroll-snap-type: none;
+  }
+
+  .scores-card--timeline {
+    flex: unset;
+    width: min(var(--scores-card-width), 100%);
+    max-width: 360px;
+    margin: 0 auto;
+  }
 }
 
 .scores-carousel__track::-webkit-scrollbar {
