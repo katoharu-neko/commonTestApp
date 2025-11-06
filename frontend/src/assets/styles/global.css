@@ -671,22 +671,9 @@ textarea {
 
 @media (min-width: 1024px) {
   .scores-carousel__track {
-    --scores-card-width: clamp(300px, 32vw, 360px);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    justify-content: center;
-    align-items: stretch;
-    gap: 28px;
-    overflow: visible;
-    padding: 12px 0;
-    scroll-snap-type: none;
-  }
-
-  .scores-card--timeline {
-    flex: unset;
-    width: min(100%, var(--scores-card-width));
-    max-width: min(100%, var(--scores-card-width));
-    margin: 0 auto;
+    --scores-card-width: min(100%, 960px);
+    gap: 32px;
+    padding: 16px max(24px, calc((100% - var(--scores-card-width)) / 2));
   }
 }
 
@@ -702,6 +689,12 @@ textarea {
   max-width: min(var(--scores-card-width), 100%);
   scroll-snap-align: center;
   scroll-snap-stop: always;
+}
+
+@media (min-width: 1024px) {
+  .scores-card--timeline {
+    margin-inline: auto;
+  }
 }
 
 .scores-card--timeline:hover {
