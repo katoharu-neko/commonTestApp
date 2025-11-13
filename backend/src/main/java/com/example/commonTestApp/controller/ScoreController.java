@@ -1,5 +1,7 @@
 package com.example.commonTestApp.controller;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.Year;
@@ -7,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.commonTestApp.entity.Score;
 import com.example.commonTestApp.entity.Subject;
 import com.example.commonTestApp.entity.User;
+import com.example.commonTestApp.repository.OfficialStatisticRepository;
 import com.example.commonTestApp.repository.ScoreRepository;
 import com.example.commonTestApp.repository.SubjectRepository;
 import com.example.commonTestApp.repository.UserRepository;
@@ -45,6 +49,7 @@ public class ScoreController {
     private final ScoreRepository scoreRepository;
     private final SubjectRepository subjectRepository;
     private final UserRepository userRepository;
+    private final OfficialStatisticRepository officialStatisticRepository;
 
     // ====== ヘルパー ======
 
@@ -210,9 +215,48 @@ public class ScoreController {
         s.setAttemptNumber(attemptNumber);
         // createdAt はエンティティ側の @PrePersist などで自動付与しているなら省略
 
+        applyStatisticValues(s);
+
         Score saved = scoreRepository.save(s);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(toResponse(saved, Map.of(subject.getId(), subject)));
+    }
+
+    private void applyStatisticValues(Score score) {
+        if (score.getSubjectId() == null || score.getYear() == null) {
+            score.setAverageScore(null);
+            score.setStdDeviation(null);
+            score.setDeviationValue(null);
+            return;
+        }
+        Optional<com.example.commonTestApp.entity.OfficialStatistic> opt =
+                officialStatisticRepository.findByYearAndSubjectId(score.getYear(), score.getSubjectId());
+
+        if (opt.isEmpty()) {
+            score.setAverageScore(null);
+            score.setStdDeviation(null);
+            score.setDeviationValue(null);
+            return;
+        }
+
+        com.example.commonTestApp.entity.OfficialStatistic stat = opt.get();
+        score.setAverageScore(stat.getAverageScore());
+        score.setStdDeviation(stat.getStdDeviation());
+
+        BigDecimal std = stat.getStdDeviation();
+        BigDecimal avg = stat.getAverageScore();
+        if (std == null || avg == null || std.compareTo(BigDecimal.ZERO) <= 0 || score.getScore() == null) {
+            score.setDeviationValue(null);
+            return;
+        }
+
+        BigDecimal scoreValue = BigDecimal.valueOf(score.getScore());
+        BigDecimal ratio = scoreValue.subtract(avg)
+                .divide(std, 6, RoundingMode.HALF_UP);
+        BigDecimal deviation = ratio.multiply(BigDecimal.TEN)
+                .add(BigDecimal.valueOf(50))
+                .setScale(2, RoundingMode.HALF_UP);
+        score.setDeviationValue(deviation);
     }
 
     private List<ScoreResponse> toResponseList(List<Score> scores) {
@@ -262,7 +306,10 @@ public class ScoreController {
                 score.getScore(),
                 score.getYear(),
                 score.getAttemptNumber(),
-                score.getCreatedAt()
+                score.getCreatedAt(),
+                score.getAverageScore(),
+                score.getStdDeviation(),
+                score.getDeviationValue()
         );
     }
 
@@ -275,9 +322,13 @@ public class ScoreController {
         private final Integer year;
         private final Integer attemptNumber;
         private final LocalDateTime createdAt;
+        private final BigDecimal averageScore;
+        private final BigDecimal stdDeviation;
+        private final BigDecimal deviationValue;
 
         public ScoreResponse(Long id, Long userId, Integer subjectId, String subjectName,
-                              Integer score, Integer year, Integer attemptNumber, LocalDateTime createdAt) {
+                              Integer score, Integer year, Integer attemptNumber, LocalDateTime createdAt,
+                              BigDecimal averageScore, BigDecimal stdDeviation, BigDecimal deviationValue) {
             this.id = id;
             this.userId = userId;
             this.subjectId = subjectId;
@@ -286,6 +337,9 @@ public class ScoreController {
             this.year = year;
             this.attemptNumber = attemptNumber;
             this.createdAt = createdAt;
+            this.averageScore = averageScore;
+            this.stdDeviation = stdDeviation;
+            this.deviationValue = deviationValue;
         }
 
         public Long getId() { return id; }
@@ -296,6 +350,9 @@ public class ScoreController {
         public Integer getYear() { return year; }
         public Integer getAttemptNumber() { return attemptNumber; }
         public LocalDateTime getCreatedAt() { return createdAt; }
+        public BigDecimal getAverageScore() { return averageScore; }
+        public BigDecimal getStdDeviation() { return stdDeviation; }
+        public BigDecimal getDeviationValue() { return deviationValue; }
     }
 
     // ====== 例外ハンドリング（簡易） ======

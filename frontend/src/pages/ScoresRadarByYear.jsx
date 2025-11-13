@@ -2,11 +2,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import api from '../api/apiClient';
+import { getOfficialStatisticsForYears } from '../api/statisticsApi';
 import {
   createSubjectLookup,
   getSubjectDisplayName,
   sortSubjectNamesByCategory,
 } from '../utils/subjectOrder';
+import { createAveragePercentLookup } from '../utils/statistics';
 
 const DEFAULT_ATTEMPT_OPTIONS = [1, 2, 3];
 
@@ -56,7 +58,8 @@ const buildRadarDataset = function (
   attemptValue,
   subjectLookup,
   subjectFullScoreMap,
-  scoreSubjectNameMap
+  scoreSubjectNameMap,
+  averagePercentLookup
 ) {
   if (!Array.isArray(scores) || !scores.length || !year) {
     return { indicator: [], data: [], totalScore: 0, totalFullScore: 0 };
@@ -167,23 +170,52 @@ const buildRadarDataset = function (
     return Math.round(pct * 10) / 10;
   });
 
+  let averageData = null;
+  if (averagePercentLookup && averagePercentLookup.get) {
+    const yearMap = averagePercentLookup.get(targetYear);
+    if (yearMap && yearMap.size) {
+      const values = subjectsForChart.map(function (item) {
+        if (yearMap.has(item.strKey)) {
+          return yearMap.get(item.strKey);
+        }
+        if (typeof item.key === 'string' && yearMap.has(item.key)) {
+          return yearMap.get(item.key);
+        }
+        return null;
+      });
+      if (values.some(function (value) { return value !== null && value !== undefined; })) {
+        averageData = values;
+      }
+    }
+  }
+
   const normalizedScore = Math.round(totalScoreSum * 10) / 10;
   const normalizedFullScore = Math.round(totalFullScoreSum * 10) / 10;
 
   return {
     indicator: indicator,
-    data: percentValues,
+    userData: percentValues,
+    averageData: averageData,
     totalScore: normalizedScore,
     totalFullScore: normalizedFullScore,
   };
 };
 
-const createRadarChartOption = function (indicator, data) {
+const createRadarChartOption = function (indicator, userData, averageData) {
   const stroke = '#3BAFDA';
   const fill = 'rgba(59,175,218,0.18)';
+  const legendEntries = ['自己スコア'];
+  if (Array.isArray(averageData)) {
+    legendEntries.push('平均点');
+  }
 
   return {
     tooltip: {},
+    legend: {
+      data: legendEntries,
+      top: 0,
+      textStyle: { color: '#0f172a' },
+    },
     radar: {
       indicator: indicator,
       startAngle: 90,
@@ -198,8 +230,8 @@ const createRadarChartOption = function (indicator, data) {
         type: 'radar',
         data: [
           {
-            value: data,
-            name: '得点率(%)',
+            value: userData,
+            name: '自己スコア',
             lineStyle: { width: 2, color: stroke },
             itemStyle: { color: stroke, borderColor: stroke },
             areaStyle: { color: fill },
@@ -209,6 +241,24 @@ const createRadarChartOption = function (indicator, data) {
               areaStyle: { color: 'rgba(59,175,218,0.28)' },
             },
           },
+          ...(Array.isArray(averageData)
+            ? [
+                {
+                  value: averageData.map((value) =>
+                    Number.isFinite(value) ? value : null
+                  ),
+                  name: '平均点',
+                  lineStyle: { width: 2, color: '#dc2626' },
+                  itemStyle: { color: '#dc2626', borderColor: '#dc2626' },
+                  areaStyle: { color: 'rgba(220,38,38,0.15)' },
+                  emphasis: {
+                    lineStyle: { color: '#b91c1c' },
+                    itemStyle: { color: '#b91c1c' },
+                    areaStyle: { color: 'rgba(220,38,38,0.25)' },
+                  },
+                },
+              ]
+            : []),
         ],
         symbol: 'circle',
         symbolSize: 5,
@@ -241,6 +291,7 @@ const ScoresRadarByYear = () => {
   const [loadingInit, setLoadingInit] = useState(true);
   const [initError, setInitError] = useState('');
   const [inputOpen, setInputOpen] = useState(false);
+  const [officialStatsByYear, setOfficialStatsByYear] = useState(new Map());
 
   // ---- 初期ロード ----
   useEffect(() => {
@@ -320,6 +371,47 @@ const ScoresRadarByYear = () => {
   }, [scores]);
 
   const attemptOptionsByYear = useMemo(() => buildAttemptOptionsByYear(scores), [scores]);
+
+  useEffect(() => {
+    const years = Array.from(
+      new Set(
+        scores
+          .map((item) => (item && item.year != null ? Number(item.year) : null))
+          .filter((year) => Number.isFinite(year))
+      )
+    );
+
+    if (!years.length) {
+      setOfficialStatsByYear(new Map());
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchOfficialStats = async () => {
+      try {
+        const map = await getOfficialStatisticsForYears(years);
+        if (!cancelled) {
+          setOfficialStatsByYear(new Map(map));
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setOfficialStatsByYear(new Map());
+        }
+      }
+    };
+
+    fetchOfficialStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scores]);
+
+  const averagePercentLookup = useMemo(() => {
+    return createAveragePercentLookup(officialStatsByYear);
+  }, [officialStatsByYear]);
 
   useEffect(
     function () {
@@ -475,7 +567,8 @@ const ScoresRadarByYear = () => {
             combo.attemptNumber,
             subjectLookup,
             subjectFullScoreMap,
-            scoreSubjectNameMap
+            scoreSubjectNameMap,
+            averagePercentLookup
           );
           return {
             key: combo.year + '::' + combo.attemptNumber,
@@ -513,7 +606,7 @@ const ScoresRadarByYear = () => {
           <div className="scores-carousel__track" role="list">
             {historyCards.map(function (card) {
               const isActive = String(card.year) === String(viewYear) && String(card.attemptNumber) === String(viewAttempt);
-              const option = createRadarChartOption(card.dataset.indicator, card.dataset.data);
+              const option = createRadarChartOption(card.dataset.indicator, card.dataset.userData, card.dataset.averageData);
               return (
                 <article
                   key={card.key}

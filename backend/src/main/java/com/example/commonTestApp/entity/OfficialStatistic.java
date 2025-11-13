@@ -1,7 +1,6 @@
 package com.example.commonTestApp.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,41 +11,39 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 @Entity
 @Data
-@Table(name = "scores")
-public class Score {
+@Table(
+    name = "official_statistics",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_official_statistics_year_subject", columnNames = {"year", "subject_id"})
+    }
+)
+public class OfficialStatistic {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ユーザーID（外部キー相当）
-    private Long userId;
+    private Integer year;
 
     @Column(name = "subject_id", nullable = false)
     private Integer subjectId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_id", insertable = false, updatable = false)
-    @JsonIgnore
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private Subject subject;
+    private String category;
 
-    private Integer score;
+    @Column(name = "official_name")
+    private String officialName;
 
-    @Column(name = "attempt_number", nullable = false)
-    private Integer attemptNumber = 1;
+    @Column(name = "full_score")
+    private Integer fullScore;
 
-    private Integer year; // 例：2025年共通テストなど
+    private Integer candidates;
 
     @Column(name = "average_score")
     private BigDecimal averageScore;
@@ -54,8 +51,9 @@ public class Score {
     @Column(name = "std_deviation")
     private BigDecimal stdDeviation;
 
-    @Column(name = "deviation_value")
-    private BigDecimal deviationValue;
-
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id", insertable = false, updatable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Subject subject;
 }

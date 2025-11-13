@@ -1,12 +1,14 @@
 // src/components/dashboard/RecentScoresRadar.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import api from '../../api/apiClient';
+import { getOfficialStatisticsForYears } from '../../api/statisticsApi';
 import {
   createSubjectLookup,
   getSubjectDisplayName,
   sortSubjectNamesByCategory,
 } from '../../utils/subjectOrder';
+import { createAveragePercentLookup } from '../../utils/statistics';
 
 const MAX_PERCENT = 100;
 
@@ -26,6 +28,7 @@ const RecentScoresRadar = () => {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [officialStatsByYear, setOfficialStatsByYear] = useState(new Map());
 
   useEffect(() => {
     let mounted = true;
@@ -65,6 +68,73 @@ const RecentScoresRadar = () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const years = Array.from(
+      new Set(
+        scores
+          .map((item) => (item && item.year != null ? Number(item.year) : null))
+          .filter((year) => Number.isFinite(year))
+      )
+    );
+
+    if (!years.length) {
+      setOfficialStatsByYear(new Map());
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchOfficialStats = async () => {
+      try {
+        const map = await getOfficialStatisticsForYears(years);
+        if (!cancelled) {
+          setOfficialStatsByYear(new Map(map));
+        }
+      } catch (fetchError) {
+        console.error(fetchError);
+        if (!cancelled) {
+          setOfficialStatsByYear(new Map());
+        }
+      }
+    };
+
+    fetchOfficialStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scores]);
+
+  const averagePercentLookup = useMemo(() => {
+    return createAveragePercentLookup(officialStatsByYear);
+  }, [officialStatsByYear]);
+
+  const getAverageSeries = useCallback(
+    (year, subjectKeys) => {
+      if (!year || !Array.isArray(subjectKeys) || !subjectKeys.length) {
+        return null;
+      }
+      const yearMap = averagePercentLookup.get(String(year));
+      if (!yearMap || !yearMap.size) {
+        return null;
+      }
+
+      const values = subjectKeys.map((subjectKey) => {
+        const keyString = String(subjectKey);
+        if (yearMap.has(keyString)) {
+          return yearMap.get(keyString);
+        }
+        if (typeof subjectKey === 'string' && yearMap.has(subjectKey)) {
+          return yearMap.get(subjectKey);
+        }
+        return null;
+      });
+
+      return values.some((value) => value !== null && value !== undefined) ? values : null;
+    },
+    [averagePercentLookup]
+  );
 
   const fullScoreMap = useMemo(() => {
     const map = new Map();
@@ -125,6 +195,8 @@ const RecentScoresRadar = () => {
       key: `${combo.year}-${combo.attempt}`,
       label: `${combo.year}年 ${formatAttemptLabel(combo.attempt)}`,
       rows: combo.rows.slice(),
+      year: combo.year,
+      attempt: combo.attempt,
     }));
   }, [sortedCombos]);
 
@@ -206,8 +278,19 @@ const RecentScoresRadar = () => {
           max: MAX_PERCENT,
         }));
 
+        const averageValues = getAverageSeries(option.year, subjectList);
+        const legendData = ['自己スコア'];
+        if (averageValues) {
+          legendData.push('平均点');
+        }
+
         const chartOption = {
           tooltip: {},
+          legend: {
+            data: legendData,
+            top: 0,
+            textStyle: { color: '#0f172a' },
+          },
           radar: {
             indicator,
             startAngle: 90,
@@ -232,11 +315,24 @@ const RecentScoresRadar = () => {
               data: [
                 {
                   value: values,
-                  name: `${option.label} 平均`,
+                  name: '自己スコア',
                   areaStyle: { color: 'rgba(59,130,246,0.25)' },
                   lineStyle: { color: '#2563eb', width: 2 },
                   itemStyle: { color: '#2563eb' },
                 },
+                ...(averageValues
+                  ? [
+                      {
+                        value: averageValues.map((value) =>
+                          Number.isFinite(value) ? value : null
+                        ),
+                        name: '平均点',
+                        areaStyle: { color: 'rgba(220,38,38,0.1)' },
+                        lineStyle: { color: '#dc2626', width: 2 },
+                        itemStyle: { color: '#dc2626' },
+                      },
+                    ]
+                  : []),
               ],
               symbol: 'circle',
               symbolSize: 5,
@@ -256,7 +352,7 @@ const RecentScoresRadar = () => {
         };
       })
       .filter(Boolean);
-  }, [comboOptions, fullScoreMap, subjectLookup, scoreSubjectNameMap]);
+  }, [comboOptions, fullScoreMap, subjectLookup, scoreSubjectNameMap, getAverageSeries]);
 
   if (loading) {
     return [
