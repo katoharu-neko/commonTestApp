@@ -581,7 +581,7 @@ const ScoresRadarByYear = () => {
           return item.dataset && item.dataset.indicator && item.dataset.indicator.length;
         });
     },
-    [scores, subjectLookup, subjectFullScoreMap, scoreSubjectNameMap]
+    [scores, subjectLookup, subjectFullScoreMap, scoreSubjectNameMap, averagePercentLookup]
   );
 
   const handleCardSelect = function (yearValue, attemptNumber) {
