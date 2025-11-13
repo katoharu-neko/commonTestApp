@@ -23,6 +23,10 @@ ALTER TABLE scores
 
 -- official statistics data will be inserted below
 
+-- Ensure that the 情報I subject exists so that the statistics below always have a valid reference
+INSERT INTO subjects (category, name, full_score, short_name)
+SELECT '情報', '情報I', 100, '情報'
+WHERE NOT EXISTS (SELECT 1 FROM subjects WHERE name = '情報I');
 
 INSERT INTO official_statistics (year, subject_id, category, official_name, full_score, candidates, average_score, std_deviation) VALUES
     (2021,1,'国語','国語',200,457305,117.51,34.67),
@@ -152,7 +156,7 @@ INSERT INTO official_statistics (year, subject_id, category, official_name, full
     (2025,24,'外国語','フランス語',200,116,130.59,48.76),
     (2025,25,'外国語','中国語',200,874,166.02,30.18),
     (2025,26,'外国語','韓国語',200,235,146.91,45.81),
-    (2025,27,'情報','情報I',100,279718,69.26,16.09);
+    (2025,(SELECT id FROM subjects WHERE name = '情報I'),'情報','情報I',100,279718,69.26,16.09);
 
 UPDATE scores s
 JOIN official_statistics os ON s.year = os.year AND s.subject_id = os.subject_id
