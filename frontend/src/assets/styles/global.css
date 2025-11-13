@@ -672,8 +672,16 @@ textarea {
 @media (min-width: 1024px) {
   .scores-carousel__track {
     --scores-card-width: min(100%, 960px);
-    gap: 32px;
-    padding: 16px max(24px, calc((100% - var(--scores-card-width)) / 2));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 28px;
+    padding: 12px clamp(12px, 4vw, 32px) 24px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    overflow: visible;
+    scroll-snap-type: none;
+    scroll-padding-inline: 0;
   }
 }
 
@@ -693,7 +701,12 @@ textarea {
 
 @media (min-width: 1024px) {
   .scores-card--timeline {
-    margin-inline: auto;
+    flex: initial;
+    max-width: none;
+    width: 100%;
+    scroll-snap-align: unset;
+    scroll-snap-stop: unset;
+    margin-inline: 0;
   }
 }
 
