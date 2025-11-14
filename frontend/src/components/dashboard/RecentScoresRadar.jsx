@@ -327,7 +327,7 @@ const RecentScoresRadar = () => {
                           Number.isFinite(value) ? value : null
                         ),
                         name: '平均点',
-                        areaStyle: { color: 'rgba(220,38,38,0.1)' },
+                        areaStyle: { color: 'rgba(255, 255, 255, 0)' },
                         lineStyle: { color: '#dc2626', width: 2 },
                         itemStyle: { color: '#dc2626' },
                       },
@@ -393,13 +393,11 @@ const RecentScoresRadar = () => {
     return (
       <div key={config.key} className="card dashboard-card recent-scores-card recent-scores-card--chart">
         <div className="recent-scores-card__header">
-          <span className="recent-scores-card__label">直近のテスト結果</span>
           <h2 className="recent-scores-card__title">{config.label}</h2>
         </div>
         <div className="chart-score-summary">
-          <span className="chart-score-summary__label">取得点数の合計点 / 満点の合計</span>
           <span className="chart-score-summary__value">
-            {formatTotalValue(config.totalScore)} / {formatTotalValue(config.totalFullScore)}
+            {formatTotalValue(config.totalScore)} 点/ {formatTotalValue(config.totalFullScore)}点
           </span>
         </div>
         <ReactECharts option={config.chartOption} style={{ width: '100%', height: 320 }} />
