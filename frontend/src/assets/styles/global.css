@@ -587,7 +587,7 @@ textarea {
 }
 
 .scores-card__total {
-  margin: 0;
+ margin: 0;
   display: flex;
   align-items: baseline;
   justify-content: center;
@@ -612,12 +612,14 @@ textarea {
 
 .scores-card__content {
   display: grid;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 960px) {
   .scores-card__content {
-    grid-template-columns: minmax(320px, 1.7fr) minmax(220px, 1fr);
+    grid-template-columns: minmax(360px, 1.8fr) minmax(260px, 1fr);
+    align-items: stretch;
   }
 }
 
@@ -659,7 +661,7 @@ textarea {
 }
 
 .scores-carousel__track {
-  --scores-card-width: clamp(280px, 84vw, 420px);
+  --scores-card-width: clamp(280px, 92vw, 420px);
   display: flex;
   gap: 22px;
   overflow-x: auto;
@@ -669,19 +671,11 @@ textarea {
   -webkit-overflow-scrolling: touch;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 960px) {
   .scores-carousel__track {
-    --scores-card-width: min(100%, 960px);
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-    gap: 28px;
-    padding: 12px clamp(12px, 4vw, 32px) 24px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    overflow: visible;
-    scroll-snap-type: none;
-    scroll-padding-inline: 0;
+    --scores-card-width: min(960px, 80vw);
+    justify-content: center;
+    padding: 16px;
   }
 }
 
@@ -699,16 +693,7 @@ textarea {
   scroll-snap-stop: always;
 }
 
-@media (min-width: 1024px) {
-  .scores-card--timeline {
-    flex: initial;
-    max-width: none;
-    width: 100%;
-    scroll-snap-align: unset;
-    scroll-snap-stop: unset;
-    margin-inline: 0;
-  }
-}
+/* PC でも常に 1 カード表示にするため、flex 設定を維持する */
 
 .scores-card--timeline:hover {
   transform: translateY(-4px);
@@ -743,12 +728,6 @@ textarea {
 
   .scores-card__total-value {
     font-size: 16px;
-  }
-}
-
-@media (max-width: 768px) {
-  .scores-card__content {
-    grid-template-columns: 1fr;
   }
 }
 
