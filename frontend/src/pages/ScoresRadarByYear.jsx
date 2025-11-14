@@ -1,5 +1,5 @@
 // src/pages/ScoresRadarByYear.jsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import api from '../api/apiClient';
 import { getOfficialStatisticsForYears } from '../api/statisticsApi';
@@ -11,6 +11,19 @@ import {
 import { createAveragePercentLookup } from '../utils/statistics';
 
 const DEFAULT_ATTEMPT_OPTIONS = [1, 2, 3];
+
+const getLatestAttemptNumber = (attempts) => {
+  if (!Array.isArray(attempts) || !attempts.length) {
+    return 1;
+  }
+  for (let idx = attempts.length - 1; idx >= 0; idx -= 1) {
+    const normalized = Number(attempts[idx]);
+    if (Number.isFinite(normalized) && normalized > 0) {
+      return Math.trunc(normalized);
+    }
+  }
+  return 1;
+};
 
 const buildAttemptOptionsByYear = (scoresList) => {
   const yearToAttempts = new Map();
@@ -292,6 +305,7 @@ const ScoresRadarByYear = () => {
   const [initError, setInitError] = useState('');
   const [inputOpen, setInputOpen] = useState(false);
   const [officialStatsByYear, setOfficialStatsByYear] = useState(new Map());
+  const carouselTrackRef = useRef(null);
 
   // ---- 初期ロード ----
   useEffect(() => {
@@ -316,7 +330,8 @@ const ScoresRadarByYear = () => {
           if (!year) setYear(latestKey);
 
           const attemptsForLatest = attemptMap.get(latestKey);
-          setViewAttempt(String((attemptsForLatest && attemptsForLatest[0]) || 1));
+          const latestAttempt = getLatestAttemptNumber(attemptsForLatest);
+          setViewAttempt(String(latestAttempt));
         } else {
           const now = new Date().getFullYear();
           const nowKey = String(now);
@@ -427,7 +442,7 @@ const ScoresRadarByYear = () => {
         if (latestKey) {
           const attempts = attemptOptionsByYear.get(latestKey) || [];
           setViewYear(latestKey);
-          setViewAttempt(String((attempts && attempts[0]) || 1));
+          setViewAttempt(String(getLatestAttemptNumber(attempts)));
         }
         return;
       }
@@ -439,7 +454,7 @@ const ScoresRadarByYear = () => {
         return;
       }
       if (!options.includes(Number(viewAttempt))) {
-        setViewAttempt(String(options[0]));
+        setViewAttempt(String(getLatestAttemptNumber(options)));
       }
     },
     [attemptOptionsByYear, viewYear, viewAttempt]
@@ -506,7 +521,7 @@ const ScoresRadarByYear = () => {
         if (submittedAttemptOptions.includes(submittedAttempt)) {
           setViewAttempt(String(submittedAttempt));
         } else if (submittedAttemptOptions.length) {
-          setViewAttempt(String(submittedAttemptOptions[0]));
+          setViewAttempt(String(getLatestAttemptNumber(submittedAttemptOptions)));
         } else {
           setViewAttempt('1');
         }
@@ -515,7 +530,7 @@ const ScoresRadarByYear = () => {
         const latestKey = String(latest);
         setViewYear(latestKey);
         const attemptsForLatest = attemptMap.get(latestKey);
-        setViewAttempt(String((attemptsForLatest && attemptsForLatest[0]) || 1));
+        setViewAttempt(String(getLatestAttemptNumber(attemptsForLatest)));
       } else {
         setViewAttempt('1');
       }
@@ -584,6 +599,111 @@ const ScoresRadarByYear = () => {
     [scores, subjectLookup, subjectFullScoreMap, scoreSubjectNameMap, averagePercentLookup]
   );
 
+  const hasCards = historyCards.length > 0;
+
+  useEffect(() => {
+    if (!hasCards) {
+      return;
+    }
+    const trackEl = carouselTrackRef.current;
+    if (!trackEl) {
+      return;
+    }
+
+    const activeCard = trackEl.querySelector('.scores-card--active');
+    if (activeCard && typeof activeCard.scrollIntoView === 'function') {
+      activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [hasCards, historyCards, viewYear, viewAttempt]);
+
+  useEffect(() => {
+    if (!hasCards) {
+      return undefined;
+    }
+    const trackEl = carouselTrackRef.current;
+    if (!trackEl) {
+      return undefined;
+    }
+
+    let isDragging = false;
+    let dragStartX = 0;
+    let startScrollLeft = 0;
+    let activePointerId = null;
+
+    const stopDragging = () => {
+      if (!isDragging) {
+        return;
+      }
+      isDragging = false;
+      if (activePointerId !== null && typeof trackEl.releasePointerCapture === 'function') {
+        try {
+          trackEl.releasePointerCapture(activePointerId);
+        } catch (err) {
+          // ignore
+        }
+      }
+      activePointerId = null;
+      trackEl.classList.remove('scores-carousel__track--dragging');
+    };
+
+    const handlePointerDown = (event) => {
+      if (event.pointerType === 'touch') {
+        return;
+      }
+      isDragging = true;
+      dragStartX = event.clientX;
+      startScrollLeft = trackEl.scrollLeft;
+      activePointerId = event.pointerId;
+      trackEl.classList.add('scores-carousel__track--dragging');
+      if (typeof trackEl.setPointerCapture === 'function') {
+        try {
+          trackEl.setPointerCapture(activePointerId);
+        } catch (err) {
+          activePointerId = null;
+        }
+      }
+    };
+
+    const handlePointerMove = (event) => {
+      if (!isDragging) {
+        return;
+      }
+      event.preventDefault();
+      const deltaX = event.clientX - dragStartX;
+      trackEl.scrollLeft = startScrollLeft - deltaX;
+    };
+
+    const handleWheel = (event) => {
+      if (trackEl.scrollWidth <= trackEl.clientWidth) {
+        return;
+      }
+      const absDeltaY = Math.abs(event.deltaY);
+      const absDeltaX = Math.abs(event.deltaX);
+      if (absDeltaY === 0 || absDeltaY <= absDeltaX) {
+        return;
+      }
+      trackEl.scrollBy({ left: event.deltaY, behavior: 'auto' });
+      event.preventDefault();
+    };
+
+    trackEl.addEventListener('pointerdown', handlePointerDown);
+    trackEl.addEventListener('pointermove', handlePointerMove);
+    trackEl.addEventListener('pointerup', stopDragging);
+    trackEl.addEventListener('pointerleave', stopDragging);
+    trackEl.addEventListener('pointercancel', stopDragging);
+    trackEl.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      trackEl.removeEventListener('pointerdown', handlePointerDown);
+      trackEl.removeEventListener('pointermove', handlePointerMove);
+      trackEl.removeEventListener('pointerup', stopDragging);
+      trackEl.removeEventListener('pointerleave', stopDragging);
+      trackEl.removeEventListener('pointercancel', stopDragging);
+      trackEl.removeEventListener('wheel', handleWheel);
+      stopDragging();
+    };
+  }, [hasCards]);
+
   const handleCardSelect = function (yearValue, attemptNumber) {
     setViewYear(String(yearValue));
     setViewAttempt(String(attemptNumber));
@@ -593,8 +713,6 @@ const ScoresRadarByYear = () => {
     setInputOpen(false);
   };
 
-  const hasCards = historyCards.length > 0;
-
   // ---- UI ----
   return (
     <div className="scores-page">
@@ -603,7 +721,7 @@ const ScoresRadarByYear = () => {
 
       {hasCards ? (
         <section className="scores-carousel">
-          <div className="scores-carousel__track" role="list">
+          <div className="scores-carousel__track" role="list" ref={carouselTrackRef}>
             {historyCards.map(function (card) {
               const isActive = String(card.year) === String(viewYear) && String(card.attemptNumber) === String(viewAttempt);
               const option = createRadarChartOption(card.dataset.indicator, card.dataset.userData, card.dataset.averageData);
