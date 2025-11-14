@@ -674,6 +674,16 @@ textarea {
   scroll-snap-type: x mandatory;
   scroll-padding-inline: max(16px, calc((100% - var(--scores-card-width)) / 2));
   -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.scores-carousel__track--dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.scores-carousel__track--dragging .scores-card--timeline {
+  pointer-events: none;
 }
 
 @media (min-width: 960px) {
