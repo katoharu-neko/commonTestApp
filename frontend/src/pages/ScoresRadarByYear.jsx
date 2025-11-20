@@ -638,6 +638,22 @@ const ScoresRadarByYear = () => {
     if (!hasCards) {
       return;
     }
+
+    const activeExists = historyCards.some(
+      (card) => String(card.year) === String(viewYear) && String(card.attemptNumber) === String(viewAttempt)
+    );
+
+    if (!activeExists) {
+      const latestCard = historyCards[0];
+      setViewYear(String(latestCard.year));
+      setViewAttempt(String(latestCard.attemptNumber));
+    }
+  }, [hasCards, historyCards, viewAttempt, viewYear]);
+
+  useEffect(() => {
+    if (!hasCards) {
+      return;
+    }
     const trackEl = carouselTrackRef.current;
     if (!trackEl) {
       return;
