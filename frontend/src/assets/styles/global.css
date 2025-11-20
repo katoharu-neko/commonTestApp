@@ -610,6 +610,12 @@ textarea {
   color: #0f172a;
 }
 
+.scores-card__total-deviation {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .scores-card__content {
   display: grid;
   grid-template-columns: 1fr;
