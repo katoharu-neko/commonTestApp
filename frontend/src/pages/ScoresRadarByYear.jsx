@@ -65,6 +65,15 @@ const formatTotalValue = (value) => {
   return new Intl.NumberFormat('ja-JP', formatOptions).format(rounded);
 };
 
+const formatDeviationValue = (value) => {
+  if (!Number.isFinite(value)) return '';
+  const rounded = Math.round(value * 10) / 10;
+  const formatOptions = Number.isInteger(rounded)
+    ? { maximumFractionDigits: 0 }
+    : { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+  return new Intl.NumberFormat('ja-JP', formatOptions).format(rounded);
+};
+
 const buildRadarDataset = function (
   scores,
   year,
@@ -151,14 +160,10 @@ const buildRadarDataset = function (
     return { key: key, strKey: strKey, displayName: displayName, fullScore: safeFullScore };
   });
 
-  const indicator = subjectsForChart.map(function (item) {
-    return { name: item.displayName, max: 100 };
-  });
-
   var totalScoreSum = 0;
   var totalFullScoreSum = 0;
 
-  const percentValues = subjectsForChart.map(function (item) {
+  const subjectResults = subjectsForChart.map(function (item) {
     const items = entriesForTarget.filter(function (entry) {
       if (!entry) return false;
       if (entry.subjectId !== undefined && entry.subjectId !== null) {
@@ -169,18 +174,31 @@ const buildRadarDataset = function (
         : entry.subject;
       return fallback === item.key;
     });
-    if (!items.length) return 0;
+    if (!items.length) return { percent: 0, deviation: null };
 
     const last = items[items.length - 1];
     const rawScore = Number(last && last.score !== undefined ? last.score : 0);
     const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
+    const deviationRaw = Number(last && last.deviationValue !== undefined ? last.deviationValue : null);
+    const deviationValue = Number.isFinite(deviationRaw) ? deviationRaw : null;
     const full = item.fullScore > 0 ? item.fullScore : 100;
 
     totalScoreSum += scoreValue;
     totalFullScoreSum += full;
 
     const pct = full > 0 ? (scoreValue / full) * 100 : 0;
-    return Math.round(pct * 10) / 10;
+    return { percent: Math.round(pct * 10) / 10, deviation: deviationValue };
+  });
+
+  const percentValues = subjectResults.map(function (item) { return item.percent; });
+  const deviationValues = subjectResults.map(function (item) { return item.deviation; });
+
+  const indicator = subjectsForChart.map(function (item, idx) {
+    const deviationValue = deviationValues[idx];
+    const deviationLabel = Number.isFinite(deviationValue)
+      ? `偏差値${formatDeviationValue(deviationValue)}`
+      : '偏差値 -';
+    return { name: `${item.displayName}\n${deviationLabel}`, max: 100 };
   });
 
   let averageData = null;
