@@ -774,10 +774,9 @@ const ScoresRadarByYear = () => {
                       <ReactECharts option={option} style={cardChartStyle} notMerge />
                     </div>
                     <div className="scores-card__comment">
-                      <span className="scores-card__comment-label">全体講評</span>
                       <textarea
                         className="scores-card__comment-area"
-                        placeholder="ここに全体講評のアドバイスが表示されます。"
+                        placeholder="アドバイス"
                         readOnly
                       />
                     </div>
