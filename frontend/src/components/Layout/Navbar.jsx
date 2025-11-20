@@ -109,7 +109,7 @@ function Navbar() {
       return [
         {
           key: 'dashboard',
-          label: 'ダッシュボード',
+          label: '総合レポート',
           icon: dashboardIcon,
           onClick: function () {
             handleMenuNavigate('/');
@@ -142,7 +142,7 @@ function Navbar() {
       if (!path) return '';
 
       if (path === '/' || path.startsWith('/dashboard')) {
-        return 'ダッシュボード';
+        return '総合レポート';
       }
       if (path.startsWith('/scores')) {
         return '成績スコア';

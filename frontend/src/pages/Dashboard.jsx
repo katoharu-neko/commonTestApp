@@ -1,11 +1,11 @@
 // src/pages/Dashboard.jsx
 import React from 'react';
-import RecentScoresRadar from '../components/dashboard/RecentScoresRadar';
+import OverallDeviationTrend from '../components/dashboard/OverallDeviationTrend';
 
 export default function Dashboard() {
   return (
     <div className="dashboard-grid">
-      <RecentScoresRadar />
+      <OverallDeviationTrend />
     </div>
   );
 }

@@ -162,6 +162,8 @@ const buildRadarDataset = function (
 
   var totalScoreSum = 0;
   var totalFullScoreSum = 0;
+  var deviationSum = 0;
+  var deviationCount = 0;
 
   const subjectResults = subjectsForChart.map(function (item) {
     const items = entriesForTarget.filter(function (entry) {
@@ -187,7 +189,11 @@ const buildRadarDataset = function (
     totalFullScoreSum += full;
 
     const pct = full > 0 ? (scoreValue / full) * 100 : 0;
-    return { percent: Math.round(pct * 10) / 10, deviation: deviationValue };
+    if (Number.isFinite(deviationValue)) {
+      deviationSum += deviationValue;
+      deviationCount += 1;
+    }
+    return { percent: Math.round(pct * 10) / 10, deviation: deviationValue, score: scoreValue };
   });
 
   const percentValues = subjectResults.map(function (item) { return item.percent; });
@@ -195,11 +201,19 @@ const buildRadarDataset = function (
 
   const indicator = subjectsForChart.map(function (item, idx) {
     const deviationValue = deviationValues[idx];
+    const scoreValue = subjectResults[idx] ? subjectResults[idx].score : null;
     const deviationLabel = Number.isFinite(deviationValue)
-      ? `偏差値${formatDeviationValue(deviationValue)}`
-      : '偏差値 -';
-    return { name: `${item.displayName}\n${deviationLabel}`, max: 100 };
+      ? `ss${formatDeviationValue(deviationValue)}`
+      : 'ss -';
+    const scoreLabel = Number.isFinite(scoreValue)
+      ? `(${formatTotalValue(scoreValue)}点)`
+      : '(-点)';
+    return { name: `${item.displayName}\n${scoreLabel}\n${deviationLabel}`, max: 100 };
   });
+
+  const totalDeviation = deviationCount > 0
+    ? Math.round((deviationSum / deviationCount) * 10) / 10
+    : null;
 
   let averageData = null;
   if (averagePercentLookup && averagePercentLookup.get) {
@@ -229,6 +243,7 @@ const buildRadarDataset = function (
     averageData: averageData,
     totalScore: normalizedScore,
     totalFullScore: normalizedFullScore,
+    totalDeviation: totalDeviation,
   };
 };
 
@@ -765,6 +780,11 @@ const ScoresRadarByYear = () => {
                         <span className="scores-card__total-label">Total</span>
                         <span className="scores-card__total-value">
                           {formatTotalValue(card.dataset.totalScore)}点 / {formatTotalValue(card.dataset.totalFullScore)}点
+                        </span>
+                        <span className="scores-card__total-deviation">
+                          総合偏差値 {Number.isFinite(card.dataset.totalDeviation)
+                            ? formatDeviationValue(card.dataset.totalDeviation)
+                            : '-'}
                         </span>
                       </p>
                     </div>
