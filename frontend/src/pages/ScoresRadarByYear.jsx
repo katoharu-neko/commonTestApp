@@ -261,9 +261,9 @@ const createRadarChartOption = function (indicator, userData, averageData) {
                     Number.isFinite(value) ? value : null
                   ),
                   name: '平均点',
-                  lineStyle: { width: 2, color: '#dc2626' },
-                  itemStyle: { color: '#dc2626', borderColor: '#dc2626' },
-                  areaStyle: { color: 'rgba(220,38,38,0.15)' },
+                  lineStyle: { width: 2, color: '#dc262681' },
+                  itemStyle: { color: '#dc262681', borderColor: '#dc262681' },
+                  areaStyle: { color: 'rgba(255, 255, 255, 0)' },
                   emphasis: {
                     lineStyle: { color: '#b91c1c' },
                     itemStyle: { color: '#b91c1c' },
