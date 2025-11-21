@@ -199,22 +199,6 @@ const buildRadarDataset = function (
   const percentValues = subjectResults.map(function (item) { return item.percent; });
   const deviationValues = subjectResults.map(function (item) { return item.deviation; });
 
-  const indicator = subjectsForChart.map(function (item, idx) {
-    const deviationValue = deviationValues[idx];
-    const scoreValue = subjectResults[idx] ? subjectResults[idx].score : null;
-    const deviationLabel = Number.isFinite(deviationValue)
-      ? `ss${formatDeviationValue(deviationValue)}`
-      : 'ss -';
-    const scoreLabel = Number.isFinite(scoreValue)
-      ? `(${formatTotalValue(scoreValue)}点)`
-      : '(-点)';
-    return { name: `${item.displayName}\n${scoreLabel}\n${deviationLabel}`, max: 100 };
-  });
-
-  const totalDeviation = deviationCount > 0
-    ? Math.round((deviationSum / deviationCount) * 10) / 10
-    : null;
-
   let averageData = null;
   if (averagePercentLookup && averagePercentLookup.get) {
     const yearMap = averagePercentLookup.get(targetYear);
@@ -234,6 +218,32 @@ const buildRadarDataset = function (
     }
   }
 
+  const indicator = subjectsForChart.map(function (item, idx) {
+    const deviationValue = deviationValues[idx];
+    const scoreValue = subjectResults[idx] ? subjectResults[idx].score : null;
+    const averageValue = Array.isArray(averageData) ? averageData[idx] : null;
+    const isBelowAverage = Number.isFinite(averageValue)
+      ? (Number.isFinite(subjectResults[idx]?.percent) ? subjectResults[idx].percent < averageValue : false)
+      : false;
+
+    const deviationLabel = Number.isFinite(deviationValue)
+      ? `ss${formatDeviationValue(deviationValue)}`
+      : 'ss -';
+    const scoreLabel = Number.isFinite(scoreValue)
+      ? `${formatTotalValue(scoreValue)}点`
+      : '-点';
+    const styleKey = isBelowAverage ? 'below' : 'base';
+
+    return {
+      name: `{${styleKey}|${item.displayName}}\n{${styleKey}|${scoreLabel}}\n{${styleKey}|${deviationLabel}}`,
+      max: 100,
+    };
+  });
+
+  const totalDeviation = deviationCount > 0
+    ? Math.round((deviationSum / deviationCount) * 10) / 10
+    : null;
+
   const normalizedScore = Math.round(totalScoreSum * 10) / 10;
   const normalizedFullScore = Math.round(totalFullScoreSum * 10) / 10;
 
@@ -250,6 +260,8 @@ const buildRadarDataset = function (
 const createRadarChartOption = function (indicator, userData, averageData) {
   const stroke = '#3BAFDA';
   const fill = 'rgba(59,175,218,0.18)';
+  const averageStroke = '#6b7280';
+  const averageFill = 'rgba(107,114,128,0.18)';
   const legendEntries = ['自己スコア'];
   if (Array.isArray(averageData)) {
     legendEntries.push('平均点');
@@ -266,7 +278,13 @@ const createRadarChartOption = function (indicator, userData, averageData) {
       indicator: indicator,
       startAngle: 90,
       clockwise: true,
-      axisName: { color: '#111827' },
+      axisName: {
+        color: '#111827',
+        rich: {
+          base: { color: '#111827' },
+          below: { color: '#dc2626' },
+        },
+      },
       axisLine: { lineStyle: { color: '#bfdbfe' } },
       splitLine: { lineStyle: { color: 'rgba(59,175,218,0.35)' } },
       splitArea: { areaStyle: { color: ['rgba(59,175,218,0.05)', 'rgba(59,175,218,0.12)'] } },
@@ -294,13 +312,13 @@ const createRadarChartOption = function (indicator, userData, averageData) {
                     Number.isFinite(value) ? value : null
                   ),
                   name: '平均点',
-                  lineStyle: { width: 2, color: '#dc262681' },
-                  itemStyle: { color: '#dc262681', borderColor: '#dc262681' },
-                  areaStyle: { color: 'rgba(255, 255, 255, 0)' },
+                  lineStyle: { width: 2, color: averageStroke },
+                  itemStyle: { color: averageStroke, borderColor: averageStroke },
+                  areaStyle: { color: averageFill },
                   emphasis: {
-                    lineStyle: { color: '#b91c1c' },
-                    itemStyle: { color: '#b91c1c' },
-                    areaStyle: { color: 'rgba(220,38,38,0.25)' },
+                    lineStyle: { color: averageStroke },
+                    itemStyle: { color: averageStroke },
+                    areaStyle: { color: averageFill },
                   },
                 },
               ]

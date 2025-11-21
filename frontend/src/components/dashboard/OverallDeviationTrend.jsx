@@ -33,59 +33,56 @@ const buildYearlyDeviationSeries = (scores) => {
     }
     const attemptMap = yearMap.get(yearKey);
     if (!attemptMap.has(attemptNumber)) {
-      attemptMap.set(attemptNumber, []);
+      attemptMap.set(attemptNumber, new Map());
     }
-    attemptMap.get(attemptNumber).push(row);
+
+    const subjectMap = attemptMap.get(attemptNumber);
+    let subjectKey = null;
+    if (row?.subjectId !== undefined && row?.subjectId !== null) {
+      subjectKey = `id:${row.subjectId}`;
+    } else if (row?.subjectName) {
+      subjectKey = `name:${row.subjectName}`;
+    } else if (row?.subject) {
+      subjectKey = `sub:${row.subject}`;
+    }
+
+    if (subjectKey) {
+      subjectMap.set(subjectKey, row);
+    }
   });
 
   const summaries = [];
 
   yearMap.forEach((attemptMap, yearKey) => {
-    const attemptNumbers = Array.from(attemptMap.keys()).sort((a, b) => b - a);
-    if (!attemptNumbers.length) return;
+    attemptMap.forEach((subjectMap, attemptNumber) => {
+      if (!subjectMap.size) return;
 
-    const latestAttempt = attemptNumbers[0];
-    const rows = attemptMap.get(latestAttempt) || [];
-    if (!rows.length) return;
+      const deviationValues = [];
+      subjectMap.forEach((row) => {
+        const deviationRaw = Number(row && row.deviationValue !== undefined ? row.deviationValue : null);
+        if (Number.isFinite(deviationRaw)) {
+          deviationValues.push(deviationRaw);
+        }
+      });
 
-    const subjectLatestMap = new Map();
-    rows.forEach((row) => {
-      if (!row) return;
-      let subjectKey = null;
-      if (row.subjectId !== undefined && row.subjectId !== null) {
-        subjectKey = `id:${row.subjectId}`;
-      } else if (row.subjectName) {
-        subjectKey = `name:${row.subjectName}`;
-      } else if (row.subject) {
-        subjectKey = `sub:${row.subject}`;
-      }
-      if (subjectKey) {
-        subjectLatestMap.set(subjectKey, row);
-      }
-    });
+      const totalDeviation = deviationValues.length
+        ? Math.round((deviationValues.reduce((sum, value) => sum + value, 0) / deviationValues.length) * 10) / 10
+        : null;
 
-    if (!subjectLatestMap.size) return;
-
-    const deviationValues = [];
-    subjectLatestMap.forEach((row) => {
-      const deviationRaw = Number(row && row.deviationValue !== undefined ? row.deviationValue : null);
-      if (Number.isFinite(deviationRaw)) {
-        deviationValues.push(deviationRaw);
-      }
-    });
-
-    const totalDeviation = deviationValues.length
-      ? Math.round((deviationValues.reduce((sum, value) => sum + value, 0) / deviationValues.length) * 10) / 10
-      : null;
-
-    summaries.push({
-      year: Number(yearKey),
-      attempt: latestAttempt,
-      totalDeviation,
+      summaries.push({
+        year: Number(yearKey),
+        attempt: attemptNumber,
+        totalDeviation,
+      });
     });
   });
 
-  return summaries.sort((a, b) => b.year - a.year);
+  return summaries.sort((a, b) => {
+    if (a.year === b.year) {
+      return a.attempt - b.attempt;
+    }
+    return a.year - b.year;
+  });
 };
 
 const OverallDeviationTrend = () => {
@@ -125,7 +122,7 @@ const OverallDeviationTrend = () => {
   const seriesData = useMemo(() => buildYearlyDeviationSeries(scores), [scores]);
 
   const chartOption = useMemo(() => {
-    const categories = seriesData.map((item) => `${item.year}年度`);
+    const categories = seriesData.map((item) => `${item.year}年度${formatAttemptLabel(item.attempt)}`);
     const values = seriesData.map((item) => (Number.isFinite(item.totalDeviation) ? item.totalDeviation : null));
     const validValues = values.filter((value) => Number.isFinite(value));
     const minDeviation = validValues.length ? Math.min.apply(null, validValues) : 0;
