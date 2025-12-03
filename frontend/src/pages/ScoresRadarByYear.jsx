@@ -193,7 +193,12 @@ const buildRadarDataset = function (
       deviationSum += deviationValue;
       deviationCount += 1;
     }
-    return { percent: Math.round(pct * 10) / 10, deviation: deviationValue, score: scoreValue };
+    return {
+      percent: Math.round(pct * 10) / 10,
+      deviation: deviationValue,
+      score: scoreValue,
+      fullScore: full,
+    };
   });
 
   const percentValues = subjectResults.map(function (item) { return item.percent; });
@@ -221,6 +226,7 @@ const buildRadarDataset = function (
   const indicator = subjectsForChart.map(function (item, idx) {
     const deviationValue = deviationValues[idx];
     const scoreValue = subjectResults[idx] ? subjectResults[idx].score : null;
+    const fullScoreValue = subjectResults[idx] ? subjectResults[idx].fullScore : null;
     const averageValue = Array.isArray(averageData) ? averageData[idx] : null;
     const isBelowAverage = Number.isFinite(averageValue)
       ? (Number.isFinite(subjectResults[idx]?.percent) ? subjectResults[idx].percent < averageValue : false)
@@ -230,7 +236,7 @@ const buildRadarDataset = function (
       ? `ss${formatDeviationValue(deviationValue)}`
       : 'ss -';
     const scoreLabel = Number.isFinite(scoreValue)
-      ? `${formatTotalValue(scoreValue)}点`
+      ? `${formatTotalValue(scoreValue)}点/${formatTotalValue(fullScoreValue)}点`
       : '-点';
     const styleKey = isBelowAverage ? 'below' : 'base';
 
@@ -268,16 +274,20 @@ const createRadarChartOption = function (indicator, userData, averageData) {
   }
 
   return {
-    tooltip: {},
+    tooltip: { confine: true },
     legend: {
       data: legendEntries,
-      top: 0,
+      top: 8,
+      left: 'center',
+      itemGap: 16,
       textStyle: { color: '#0f172a' },
     },
     radar: {
       indicator: indicator,
       startAngle: 90,
       clockwise: true,
+      center: ['50%', '58%'],
+      radius: '62%',
       axisName: {
         color: '#111827',
         rich: {
@@ -597,7 +607,7 @@ const ScoresRadarByYear = () => {
   };
 
   // ---- チャート用データ（年度別、％で表示） ----
-  const cardChartStyle = { height: 'clamp(240px, 62vw, 380px)', width: '100%' };
+  const cardChartStyle = { height: 'clamp(280px, 68vw, 440px)', width: '100%' };
 
   const historyCards = useMemo(
     function () {
