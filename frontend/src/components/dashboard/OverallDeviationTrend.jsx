@@ -165,7 +165,7 @@ const OverallDeviationTrend = () => {
           name: '総合偏差値',
           type: 'line',
           data: values,
-          smooth: true,
+          smooth: false,
           symbol: 'circle',
           symbolSize: 8,
           lineStyle: { color: '#2563eb', width: 3 },
